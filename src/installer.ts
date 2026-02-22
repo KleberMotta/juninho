@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, writeFileSync, readFileSync } from "fs"
+import { existsSync, mkdirSync, writeFileSync, readFileSync, chmodSync } from "fs"
 import path from "path"
 import { writeAgents } from "./templates/agents.js"
 import { writeSkills } from "./templates/skills.js"
@@ -29,7 +29,7 @@ export async function runSetup(projectDir: string, options: SetupOptions = {}): 
 
   // Step 2: Write agents
   writeAgents(projectDir)
-  console.log("[juninho] ✓ Agents created (7)")
+  console.log("[juninho] ✓ Agents created (9)")
 
   // Step 3: Write skills
   writeSkills(projectDir)
@@ -37,7 +37,7 @@ export async function runSetup(projectDir: string, options: SetupOptions = {}): 
 
   // Step 4: Write plugins
   writePlugins(projectDir)
-  console.log("[juninho] ✓ Plugins created (10)")
+  console.log("[juninho] ✓ Plugins created (11)")
 
   // Step 5: Write tools
   writeTools(projectDir)
@@ -45,7 +45,7 @@ export async function runSetup(projectDir: string, options: SetupOptions = {}): 
 
   // Step 6: Write commands
   writeCommands(projectDir)
-  console.log("[juninho] ✓ Commands created (7)")
+  console.log("[juninho] ✓ Commands created (13)")
 
   // Step 7: Write state files
   writeState(projectDir)
@@ -59,13 +59,63 @@ export async function runSetup(projectDir: string, options: SetupOptions = {}): 
   patchOpencodeJson(projectDir)
   console.log("[juninho] ✓ opencode.json patched")
 
-  // Step 10: Write marker
+  // Step 10: Install pre-commit hook (outer validation loop)
+  writePreCommitHook(projectDir)
+
+  // Step 11: Write marker
   writeFileSync(marker, new Date().toISOString())
 
   console.log("")
   console.log("[juninho] ✓ Framework installed successfully!")
   console.log("[juninho] Open OpenCode — /plan, /spec and /implement are ready.")
-  console.log("[juninho] Agents available: @planner, @spec-writer, @implementer, @validator, @reviewer, @unify")
+  console.log("[juninho] Agents: @planner, @spec-writer, @implementer, @validator, @reviewer, @unify, @explore, @librarian")
+}
+
+function writePreCommitHook(projectDir: string): void {
+  const gitHooksDir = path.join(projectDir, ".git", "hooks")
+
+  if (!existsSync(gitHooksDir)) {
+    // Not a git repo or hooks dir doesn't exist — skip silently
+    return
+  }
+
+  const hookPath = path.join(gitHooksDir, "pre-commit")
+
+  if (existsSync(hookPath)) {
+    const existing = readFileSync(hookPath, "utf-8")
+    if (!existing.includes("installed by juninho")) {
+      // Preserve existing hook — do not overwrite
+      console.log("[juninho] ⚠ pre-commit hook already exists — skipping (not installed by juninho)")
+      return
+    }
+  }
+
+  const hookContent = `#!/bin/sh
+# Deterministic outer validation loop — installed by juninho
+# Runs typecheck + lint + tests before every commit.
+# Do not bypass with --no-verify.
+set -e
+
+echo "[pre-commit] Running typecheck..."
+npx tsc --noEmit 2>&1 || { echo "[pre-commit] FAIL: TypeScript errors"; exit 1; }
+
+echo "[pre-commit] Running lint..."
+npx eslint . --max-warnings=0 2>&1 || { echo "[pre-commit] FAIL: Lint errors"; exit 1; }
+
+echo "[pre-commit] Running tests..."
+npx jest --passWithNoTests 2>&1 || { echo "[pre-commit] FAIL: Tests failed"; exit 1; }
+
+echo "[pre-commit] All checks passed"
+`
+
+  writeFileSync(hookPath, hookContent)
+
+  try {
+    chmodSync(hookPath, 0o755)
+    console.log("[juninho] ✓ pre-commit hook installed")
+  } catch {
+    console.log("[juninho] ✓ pre-commit hook written (chmod not supported on this platform — make it executable manually)")
+  }
 }
 
 function createDirectories(projectDir: string): void {

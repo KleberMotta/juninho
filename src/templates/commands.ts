@@ -11,6 +11,12 @@ export function writeCommands(projectDir: string): void {
   writeFileSync(path.join(commandsDir, "start-work.md"), START_WORK)
   writeFileSync(path.join(commandsDir, "handoff.md"), HANDOFF)
   writeFileSync(path.join(commandsDir, "ulw-loop.md"), ULW_LOOP)
+  writeFileSync(path.join(commandsDir, "check.md"), CHECK)
+  writeFileSync(path.join(commandsDir, "lint.md"), LINT)
+  writeFileSync(path.join(commandsDir, "test.md"), TEST)
+  writeFileSync(path.join(commandsDir, "pr-review.md"), PR_REVIEW)
+  writeFileSync(path.join(commandsDir, "status.md"), STATUS)
+  writeFileSync(path.join(commandsDir, "unify.md"), UNIFY_CMD)
 }
 
 // ─── /plan ────────────────────────────────────────────────────────────────────
@@ -124,7 +130,7 @@ Run \`/implement\` again if waves are incomplete, or \`@unify\` to merge and cre
 
 const INIT_DEEP = `# /init-deep — Deep Codebase Initialization
 
-Perform a deep scan of the codebase and generate comprehensive domain documentation.
+Perform a deep scan of the codebase and generate hierarchical AGENTS.md files and domain documentation.
 
 ## Usage
 
@@ -134,32 +140,52 @@ Perform a deep scan of the codebase and generate comprehensive domain documentat
 
 ## What happens
 
-1. Scans all source files to map:
-   - Domain entities and their relationships
-   - API routes and their contracts
-   - Service layer patterns
-   - Data models and schema
+### 1. Generate hierarchical AGENTS.md files
 
-2. Writes to \`docs/domain/INDEX.md\`:
-   - Entity catalog with file locations
-   - Pattern inventory (how things are done)
-   - Dependency graph
-   - Naming conventions observed
+Scans the directory tree and generates \`AGENTS.md\` files at each significant level:
 
-3. Updates \`docs/principles/manifest\` with:
-   - Canonical code patterns found
-   - Anti-patterns to avoid
-   - Technology decisions
+- **Root \`AGENTS.md\`** (already exists): stack summary, build/test commands, critical rules — keep under 200 lines
+- **\`src/AGENTS.md\`**: source-tree architecture, directory layout, barrel export conventions, import rules
+- **\`src/{module}/AGENTS.md\`**: module-specific rules, business invariants, known pitfalls, integration contracts
+
+Each file contains only context relevant to its directory — no duplication.
+The \`directory-agents-injector\` plugin automatically injects the relevant levels when an agent reads any file.
+
+### 2. Populate domain documentation
+
+Writes to \`docs/domain/INDEX.md\`:
+- Domain entity catalog with CARL Keywords and Files entries
+- API route inventory
+- Service layer patterns
+
+### 3. Update principles manifest
+
+Adds entries to \`docs/principles/manifest\` (KEY=VALUE format):
+- Canonical code patterns discovered
+- Architectural directives
+- Technology decisions
 
 ## When to use
 
 - First time setting up the framework on an existing project
-- After major refactors that change patterns
-- When onboarding new agents to the codebase
+- After major refactors that change module structure
+- When onboarding agents to a new area of the codebase
+- After \`/init-deep\` generates files, review and augment them with non-obvious domain knowledge
 
 ## Result
 
-The CARL plugin will use these docs to inject relevant context automatically.
+\`\`\`
+project/
+├── AGENTS.md               # Updated with stack summary
+├── src/
+│   ├── AGENTS.md           # Generated: src-level architecture context
+│   └── payments/
+│       └── AGENTS.md       # Generated: payments-specific context
+└── docs/domain/INDEX.md    # Populated with CARL entries
+\`\`\`
+
+The CARL plugin uses \`INDEX.md\` to inject domain context automatically.
+The \`directory-agents-injector\` plugin injects the right \`AGENTS.md\` layers per file read.
 `
 
 // ─── /start-work ─────────────────────────────────────────────────────────────
@@ -296,4 +322,194 @@ Wave 3 (parallel):
 - Each worktree is isolated — no cross-contamination
 - Merge happens only after all waves pass validation
 - If any wave fails, the loop pauses and reports blockers
+`
+
+// ─── /check ───────────────────────────────────────────────────────────────────
+
+const CHECK = `# /check — Run All Quality Gates
+
+Run typecheck + lint + tests manually — the same checks the pre-commit hook enforces.
+
+## Usage
+
+\`\`\`
+/check
+\`\`\`
+
+## What runs
+
+1. \`tsc --noEmit\` — TypeScript compilation check (no output)
+2. \`eslint . --max-warnings=0\` — Linter (treats warnings as errors)
+3. \`jest --passWithNoTests\` — Full test suite
+
+## When to use
+
+- Before committing, to verify everything passes
+- After a refactor that touched many files
+- When the pre-commit hook failed and you want to debug which check failed
+
+## Notes
+
+These are the same checks run by the \`.git/hooks/pre-commit\` hook installed by juninho.
+The hook runs automatically on every \`git commit\` — this command lets you run them on-demand.
+`
+
+// ─── /lint ────────────────────────────────────────────────────────────────────
+
+const LINT = `# /lint — Run Linter
+
+Run the linter only for fast iteration during implementation.
+
+## Usage
+
+\`\`\`
+/lint
+\`\`\`
+
+## What runs
+
+\`eslint . --max-warnings=0\`
+
+## When to use
+
+- During active implementation, to catch style/pattern issues quickly
+- When you only want lint feedback without running the full test suite
+- After edits to check for obvious issues before committing
+`
+
+// ─── /test ────────────────────────────────────────────────────────────────────
+
+const TEST = `# /test — Run Test Suite
+
+Run the test suite only.
+
+## Usage
+
+\`\`\`
+/test
+/test <pattern>
+\`\`\`
+
+## Examples
+
+\`\`\`
+/test
+/test src/payments
+/test --watch
+\`\`\`
+
+## What runs
+
+\`jest --passWithNoTests [pattern]\`
+
+## When to use
+
+- After implementing a feature, to verify tests pass
+- When debugging a failing test — use \`/test <pattern>\` to target specific tests
+- To check test coverage on a specific module
+`
+
+// ─── /pr-review ───────────────────────────────────────────────────────────────
+
+const PR_REVIEW = `# /pr-review — Advisory PR Review
+
+Launch the \`@reviewer\` agent to perform an advisory code review on the current branch diff.
+
+## Usage
+
+\`\`\`
+/pr-review
+\`\`\`
+
+## What happens
+
+1. \`@reviewer\` reads all files changed in the current branch (vs main)
+2. Reviews for: logic correctness, clarity, security, performance, maintainability
+3. Returns a structured report: Critical / Important / Minor / Positive Notes
+4. Report is **advisory only** — does not block any merge or pipeline step
+
+## When to use
+
+- After \`/unify\` creates the PR, before human review
+- When you want a second opinion on the implementation quality
+- For pre-merge quality assurance
+
+## Distinction from @validator
+
+| \`@reviewer\` | \`@validator\` |
+|---|---|
+| Post-PR, advisory | During implementation loop |
+| "Is this good code?" | "Does this satisfy the spec?" |
+| Never blocks | Gates the pipeline |
+| Read-only | Can fix issues directly |
+`
+
+// ─── /status ──────────────────────────────────────────────────────────────────
+
+const STATUS = `# /status — Show Current Work Status
+
+Display the current \`execution-state.md\` summary — tasks, progress, and blockers.
+
+## Usage
+
+\`\`\`
+/status
+\`\`\`
+
+## What shows
+
+- Current goal and active plan path
+- Task table: ID / description / agent / status
+- In-progress items with last known state
+- Blocked items with blocker descriptions
+- Session log (recent actions)
+
+## When to use
+
+- At the start of a session to orient yourself
+- After resuming work to see what's left
+- To check if all tasks are complete before running \`/unify\`
+
+## Source
+
+Reads \`.opencode/state/execution-state.md\` directly.
+No agent needed — this is a direct state file read.
+`
+
+// ─── /unify ───────────────────────────────────────────────────────────────────
+
+const UNIFY_CMD = `# /unify — Close the Loop
+
+Invoke the \`@unify\` agent to reconcile plan vs delivery, update domain docs, merge worktrees, and create the PR.
+
+## Usage
+
+\`\`\`
+/unify
+\`\`\`
+
+## What happens
+
+1. Reconcile \`plan.md\` vs actual git diff — mark tasks DONE/PARTIAL/SKIPPED
+2. Log decisions to \`persistent-context.md\`
+3. Update \`execution-state.md\` — mark all tasks complete
+4. Update \`docs/domain/\` files affected by this feature
+5. Update \`docs/domain/INDEX.md\`
+6. Merge all worktrees + \`git worktree remove\`
+7. \`gh pr create --body "\$(cat docs/specs/{slug}/spec.md)"\`
+
+## When to use
+
+After \`@implementer\` signals all tasks complete and \`@validator\` has approved.
+
+## Prerequisites
+
+- All tasks in \`execution-state.md\` should be marked complete
+- All validator passes should return APPROVED or APPROVED_WITH_NOTES
+- \`gh\` CLI must be authenticated (\`gh auth login\`)
+
+## Note
+
+UNIFY is mandatory — no feature is complete without it.
+It is the only agent that merges worktrees and creates PRs.
 `

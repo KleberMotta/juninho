@@ -16,6 +16,11 @@ export function writeSkills(projectDir: string): void {
 const TEST_WRITING = `---
 name: test-writing
 description: Write unit and integration tests following project conventions
+# Optional: uncomment to enable Playwright MCP for E2E tests
+# mcp:
+#   playwright:
+#     command: npx
+#     args: ["-y", "@playwright/mcp@latest"]
 ---
 
 # Skill: Test Writing

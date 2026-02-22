@@ -6,6 +6,8 @@ export function writeState(projectDir: string): void {
 
   writeFileSync(path.join(stateDir, "persistent-context.md"), PERSISTENT_CONTEXT)
   writeFileSync(path.join(stateDir, "execution-state.md"), EXECUTION_STATE)
+  writeFileSync(path.join(stateDir, "validator-work.md"), VALIDATOR_WORK)
+  writeFileSync(path.join(stateDir, "implementer-work.md"), IMPLEMENTER_WORK)
 }
 
 // ─── Persistent Context ───────────────────────────────────────────────────────
@@ -93,4 +95,87 @@ The todo-enforcer plugin reads this file to prevent drift.
 
 *Last updated: (auto-filled)*
 *Next action: (fill in at end of session for /handoff)*
+`
+
+// ─── Validator Work ───────────────────────────────────────────────────────────
+
+const VALIDATOR_WORK = `# Validator Work Log
+
+Per-agent scratch space and audit trail for the \`@validator\` agent.
+Written by @validator during each validation pass. Read by UNIFY to understand what was deferred.
+
+## Current Validation Pass
+
+- Spec: (path to spec being validated)
+- Feature: (feature slug)
+- Date: (auto-filled by validator)
+
+## Results
+
+| Criterion | Tier | Notes |
+|-----------|------|-------|
+| (none yet) | — | — |
+
+## Technical Debt (NOTE tier)
+
+Accepted concerns that don't block approval — review in next iteration:
+
+- (none)
+
+## Fixes Applied Directly (FIX tier)
+
+Changes made by @validator to resolve FIX-tier issues:
+
+- (none)
+
+## Blockers (BLOCK tier)
+
+Must be resolved before approval can be granted:
+
+- (none)
+
+## Verdict
+
+(APPROVED | APPROVED_WITH_NOTES | BLOCKED)
+
+---
+
+*Reset by UNIFY at end of each feature cycle.*
+`
+
+// ─── Implementer Work ─────────────────────────────────────────────────────────
+
+const IMPLEMENTER_WORK = `# Implementer Work Log
+
+Per-agent scratch space for the \`@implementer\` agent.
+Tracks in-progress decisions, blockers, and deviations from the plan.
+
+## Current Task
+
+- Task ID: (from plan.md)
+- Wave: (wave number)
+- Worktree: (path, e.g., worktrees/feature-task-1)
+- Branch: (feature branch name)
+
+## Decisions Made
+
+Choices made during implementation that deviate from or extend the plan:
+
+- (none)
+
+## Blockers
+
+Issues that need resolution before task can proceed:
+
+- (none)
+
+## Files Modified
+
+Track which files were changed in this session:
+
+- (none)
+
+---
+
+*Updated by @implementer. Reset by UNIFY at end of each feature cycle.*
 `

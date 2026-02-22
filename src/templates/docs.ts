@@ -22,45 +22,67 @@ export function patchOpencodeJson(projectDir: string): void {
 
   const frameworkConfig = {
     agent: {
+      // ── Planning pipeline ──────────────────────────────────────────────────
       planner: {
-        description: "Strategic planner — turn a vague goal into an actionable plan.md",
+        description: "Three-phase planning pipeline (Metis→Prometheus→Momus). Spawns explore+librarian in Phase 1, interviews developer, delivers approved plan.md.",
         mode: "subagent",
-        model: "anthropic/claude-opus-4-5",
+        model: "anthropic/claude-opus-4-6",
+        permission: { write: "allow", bash: "allow", task: "allow", edit: "deny", question: "allow" },
       },
       "plan-reviewer": {
-        description: "Reviews plans for quality — approve or reject with actionable feedback",
+        description: "Executability gate for plans. Approval bias — rejects only blockers. Max 3 issues. Internal to planner.",
         mode: "subagent",
-        model: "anthropic/claude-sonnet-4-5",
-        permission: { task: "deny", bash: "deny" },
+        model: "anthropic/claude-sonnet-4-6",
+        permission: { task: "deny", write: "deny", edit: "deny", bash: "deny" },
       },
+      // ── Execution pipeline ────────────────────────────────────────────────
       "spec-writer": {
-        description: "Writes detailed feature specs via 5-phase interview",
+        description: "Produces structured specifications through 5-phase interview. Writes to docs/specs/{slug}/spec.md.",
         mode: "subagent",
-        model: "anthropic/claude-opus-4-5",
+        model: "anthropic/claude-opus-4-6",
+        permission: { bash: "deny", task: "deny" },
       },
       implementer: {
-        description: "Executes implementation plans wave by wave",
+        description: "Executes plans wave by wave using git worktrees. READ→ACT→COMMIT→VALIDATE loop per task.",
         mode: "subagent",
-        model: "anthropic/claude-sonnet-4-5",
+        model: "anthropic/claude-sonnet-4-6",
+        permission: { task: "allow" },
       },
       validator: {
-        description: "Validates implementation against spec — blocks on failures",
+        description: "Semantic validation judge — reads spec before code. BLOCK/FIX/NOTE/APPROVED. Can fix FIX-tier issues directly.",
         mode: "subagent",
-        model: "anthropic/claude-sonnet-4-5",
+        model: "anthropic/claude-sonnet-4-6",
+        permission: { task: "deny" },
       },
       reviewer: {
-        description: "Advisory code reviewer — read-only, never blocks",
+        description: "Advisory code reviewer — post-PR, read-only, never blocks the pipeline.",
         mode: "subagent",
-        model: "anthropic/claude-sonnet-4-5",
-        permission: { bash: "deny", edit: "deny", write: "deny" },
+        model: "anthropic/claude-sonnet-4-6",
+        permission: { bash: "deny", edit: "deny", write: "deny", task: "deny" },
       },
       unify: {
-        description: "Reconciles plan vs delivery, updates docs, merges worktrees, creates PR",
+        description: "Closes the loop — reconciles plan vs delivery, updates domain docs, merges worktrees, creates PR.",
         mode: "subagent",
-        model: "anthropic/claude-sonnet-4-5",
+        model: "anthropic/claude-sonnet-4-6",
+        permission: { task: "allow" },
+      },
+      // ── Research agents (spawned on-demand by planner) ────────────────────
+      explore: {
+        description: "Fast codebase research — file mapping, pattern grep, dependency tracing. Read-only, no delegation.",
+        mode: "subagent",
+        model: "anthropic/claude-haiku-4-5",
+        permission: { bash: "deny", write: "deny", edit: "deny", task: "deny" },
+      },
+      librarian: {
+        description: "External documentation and OSS research — official docs, package APIs, canonical patterns. Read-only.",
+        mode: "subagent",
+        model: "anthropic/claude-haiku-4-5",
+        permission: { bash: "deny", write: "deny", edit: "deny", task: "deny" },
       },
     },
     mcp: {
+      // Context7 is global — available to all agents for live library documentation.
+      // Low context cost, high utility across implementer, planner, and validator.
       context7: {
         type: "stdio",
         command: "npx",
@@ -110,209 +132,236 @@ function deepMerge(
 
 const AGENTS_MD = `# AGENTS.md
 
-This project uses the **Agentic Coding Framework** — a structured approach to AI-assisted development
-with specialized agents, skills, and plugins auto-configured by [juninho](https://github.com/juninho).
+This project uses the **Agentic Coding Framework** v2.1 — installed by [juninho](https://github.com/KleberMotta/juninho).
 
-## Quick Start
+## Workflows
 
-| Command | Agent | Purpose |
-|---------|-------|---------|
-| \`/plan <goal>\` | \`@planner\` | Create an actionable plan from a goal |
-| \`/spec <feature>\` | \`@spec-writer\` | Write a detailed spec before building |
-| \`/implement\` | \`@implementer\` | Execute the active plan wave by wave |
-| \`/start-work <task>\` | — | Initialize a focused work session |
-| \`/handoff\` | — | Prepare end-of-session handoff doc |
-| \`/ulw-loop\` | — | Maximum parallelism mode |
+**Path A — Spec-driven (formal features):**
+\`\`\`
+/spec → docs/specs/{slug}/spec.md (approved)
+  → /plan → docs/specs/{slug}/plan.md (approved)
+  → /implement → @validator gates each commit → /unify → PR
+\`\`\`
+
+**Path B — Plan-driven (lightweight tasks):**
+\`\`\`
+/plan → plan.md (approved) → plan-autoload injects on next session
+  → /implement → @validator gates each commit → /unify → PR
+\`\`\`
+
+## Commands
+
+| Command | Purpose |
+|---------|---------|
+| \`/spec <feature>\` | 5-phase interview → \`docs/specs/{slug}/spec.md\` |
+| \`/plan <goal>\` | 3-phase pipeline (Metis→Prometheus→Momus) → \`plan.md\` approved |
+| \`/implement\` | Execute active plan wave by wave with validation |
+| \`/check\` | Run typecheck + lint + tests (same as pre-commit hook) |
+| \`/lint\` | Run linter only |
+| \`/test\` | Run test suite only |
+| \`/pr-review\` | Advisory review of current branch diff |
+| \`/status\` | Show \`execution-state.md\` summary |
+| \`/unify\` | Reconcile, update docs, merge worktrees, create PR |
+| \`/start-work <task>\` | Initialize a focused work session |
+| \`/handoff\` | Prepare end-of-session handoff doc |
+| \`/init-deep\` | Generate hierarchical AGENTS.md + populate domain docs |
+| \`/ulw-loop\` | Maximum parallelism mode |
 
 ## Agent Roster
 
 ### @planner
-Strategic planning agent. Uses Metis→Prometheus→Momus protocol:
-- Classifies intent (FEATURE/BUG/REFACTOR/RESEARCH/MIGRATION)
-- Interviews proportional to complexity
-- Writes \`plan.md\` + \`CONTEXT.md\`
-- Loops with \`@plan-reviewer\` until approved
-
-### @spec-writer
-Specification agent. 5-phase interview:
-Discovery → Requirements → Contract → Data → Review
-Writes to \`docs/specs/{feature-name}.md\`
-
-### @implementer
-Execution agent. READ→ACT→COMMIT→VALIDATE loop.
-Wave-based: Foundation → Core → Integration
-Hashline-aware for stable file references.
-
-### @validator
-Compliance agent. Reads spec BEFORE code.
-Tiers: APPROVED / NOTE / FIX / BLOCK
-Can make direct fixes for FIX-tier issues.
-
-### @reviewer
-Advisory agent. Read-only, never blocks.
-Provides quality/security/performance feedback.
+Three-phase pipeline orchestrated internally:
+- **Phase 1 (Metis)**: Spawns \`@explore\` + \`@librarian\` in parallel, classifies intent
+- **Phase 2 (Prometheus)**: Interviews developer (proportional to complexity), writes \`CONTEXT.md\` + \`plan.md\`
+- **Phase 3 (Momus)**: Loops with \`@plan-reviewer\` until OKAY
 
 ### @plan-reviewer
-Plan quality gate. Approval bias — rejects only blocking issues.
-Max 3 actionable issues per rejection.
+Internal to planner. Executability gate — approval bias, max 3 issues.
+
+### @spec-writer
+5-phase interview: Discovery → Requirements → Contract → Data → Review.
+Writes to \`docs/specs/{feature-slug}/spec.md\`.
+
+### @implementer
+READ→ACT→COMMIT→VALIDATE loop. Wave-based with git worktrees for parallel tasks.
+Pre-commit hook gates every commit. Hashline-aware editing.
+
+### @validator
+Reads spec BEFORE code. BLOCK / FIX / NOTE / APPROVED.
+Can fix FIX-tier issues directly. Writes audit trail to \`validator-work.md\`.
+
+### @reviewer
+Post-PR advisory review. Read-only, never blocks. Use via \`/pr-review\`.
 
 ### @unify
-Completion agent. Reconciles plan vs delivery, updates domain docs,
-merges worktrees, creates PR with spec body.
+Closes the loop: reconcile, update domain docs, merge worktrees, \`gh pr create\`.
 
-## Active Plugins
+### @explore
+Fast read-only codebase research. Spawned by planner Phase 1.
+Maps files, patterns, and constraints before the developer interview.
 
-Plugins in \`.opencode/plugins/\` are auto-discovered by OpenCode:
+### @librarian
+External docs and OSS research. Spawned by planner Phase 1.
+Fetches official API docs via Context7 MCP.
 
-| Plugin | Trigger | Purpose |
-|--------|---------|---------|
-| \`env-protection\` | Any file access | Block sensitive file reads/writes |
+## Context Tiers
+
+| Tier | Mechanism | When |
+|------|-----------|------|
+| 1 | Hierarchical \`AGENTS.md\` + \`directory-agents-injector\` | Always — per directory when files are read |
+| 2 | \`carl-inject\` — keywords → principles + domain docs | Every \`UserPromptSubmit\` |
+| 3 | \`skill-inject\` — file pattern → SKILL.md | \`PreToolUse\` on Write/Edit |
+| 4 | \`<skills>\` declaration in \`plan.md\` task | Explicit per-task requirement |
+| 5 | State files in \`.opencode/state/\` | Runtime, inter-session |
+
+## Plugins (auto-discovered by OpenCode)
+
+| Plugin | Hook | Purpose |
+|--------|------|---------|
+| \`directory-agents-injector\` | Read | Inject directory-scoped AGENTS.md files (Tier 1) |
+| \`env-protection\` | Any tool | Block sensitive file reads/writes |
 | \`auto-format\` | Write/Edit | Auto-format after file changes |
-| \`plan-autoload\` | Session idle | Inject active plan into context |
-| \`carl-inject\` | User prompt | Inject relevant domain docs |
-| \`skill-inject\` | Write/Edit | Inject skill instructions by file pattern |
-| \`intent-gate\` | User prompt | Classify intent for agent routing |
-| \`todo-enforcer\` | Session idle | Re-inject incomplete tasks |
+| \`plan-autoload\` | session.idle | Inject active plan into context |
+| \`carl-inject\` | UserPromptSubmit | Inject principles + domain docs by keyword |
+| \`skill-inject\` | Write/Edit | Inject skill by file pattern |
+| \`intent-gate\` | UserPromptSubmit | Classify intent before action |
+| \`todo-enforcer\` | session.idle | Re-inject incomplete tasks |
 | \`comment-checker\` | Write/Edit | Flag obvious/redundant comments |
-| \`hashline-read\` | Read | Add stable line references |
-| \`hashline-edit\` | Edit | Validate stale hashline references |
+| \`hashline-read\` | Read | Tag lines with content hashes |
+| \`hashline-edit\` | Edit | Validate hash references before editing |
 
 ## Custom Tools
 
-Tools in \`.opencode/tools/\` extend agent capabilities:
+| Tool | Purpose |
+|------|---------|
+| \`find_pattern\` | Curated canonical examples for a given pattern type |
+| \`next_version\` | Next migration/schema version filename |
+| \`lsp_diagnostics\` | Workspace errors and warnings |
+| \`lsp_goto_definition\` | Jump to symbol definition |
+| \`lsp_find_references\` | All usages of a symbol across the codebase |
+| \`lsp_prepare_rename\` | Validate rename safety |
+| \`lsp_rename\` | Rename symbol atomically across workspace |
+| \`lsp_symbols\` | File outline or workspace symbol search |
+| \`ast_grep_search\` | Structural code pattern search |
+| \`ast_grep_replace\` | Structural pattern replacement (with dryRun) |
 
-- **find_pattern** — Find canonical code patterns for consistent implementation
-- **next_version** — Get next migration/schema version number
-- **lsp_diagnostics, lsp_goto_definition, lsp_find_references, lsp_document_symbols, lsp_workspace_symbols, lsp_rename** — LSP-like code intelligence
-- **ast_grep_search, ast_grep_replace** — AST-based structural search and replace
+## Skills (injected automatically by file pattern)
 
-## Skills
-
-Skills in \`.opencode/skills/\` inject step-by-step instructions when editing specific file types:
-
-| Skill | Activates on |
-|-------|-------------|
-| \`test-writing\` | \`*.test.ts\`, \`*.spec.ts\` |
-| \`page-creation\` | \`app/**/page.tsx\` |
-| \`api-route-creation\` | \`app/api/**/*.ts\` |
-| \`server-action-creation\` | \`**/actions.ts\` |
-| \`schema-migration\` | \`schema.prisma\` |
+| Skill | Activates on | Notes |
+|-------|-------------|-------|
+| \`test-writing\` | \`*.test.ts\`, \`*.spec.ts\` | Optional: uncomment Playwright MCP in frontmatter for E2E |
+| \`page-creation\` | \`app/**/page.tsx\` | |
+| \`api-route-creation\` | \`app/api/**/*.ts\` | |
+| \`server-action-creation\` | \`**/actions.ts\` | |
+| \`schema-migration\` | \`schema.prisma\` | |
 
 ## State Files
 
 | File | Purpose |
 |------|---------|
-| \`.opencode/state/persistent-context.md\` | Long-term project knowledge |
-| \`.opencode/state/execution-state.md\` | Current session task list |
-| \`.opencode/state/.plan-ready\` | Marker: active plan path (auto-managed) |
-
-## Workflow
-
-\`\`\`
-Goal → /plan → plan.md approved → /implement → @validator → @unify → PR
-         ↓
-      /spec (for complex features)
-         ↓
-      docs/specs/{feature}.md → /plan → /implement
-\`\`\`
+| \`.opencode/state/persistent-context.md\` | Long-term project knowledge — updated by UNIFY |
+| \`.opencode/state/execution-state.md\` | Per-feature task table — updated by implementer and UNIFY |
+| \`.opencode/state/validator-work.md\` | Validator audit trail — BLOCK/FIX/NOTE per pass |
+| \`.opencode/state/implementer-work.md\` | Implementer decisions and blockers log |
+| \`.opencode/state/.plan-ready\` | Transient IPC flag — plan path, consumed by plan-autoload |
 
 ## Conventions
 
-- Plans are in \`plan.md\` (root or task dir)
-- Specs are in \`docs/specs/\`
-- Domain docs in \`docs/domain/INDEX.md\`
-- Architectural decisions in \`.opencode/state/persistent-context.md\`
-- Worktrees for parallel work in \`worktrees/\`
+- Specs: \`docs/specs/{feature-slug}/spec.md\` + \`CONTEXT.md\` + \`plan.md\`
+- Domain docs: \`docs/domain/{domain}/*.md\` — indexed in \`docs/domain/INDEX.md\`
+- Principles: \`docs/principles/{topic}.md\` — registered in \`docs/principles/manifest\`
+- Worktrees: \`worktrees/{feature}-{task}/\` — created by implementer, removed by UNIFY
+- Hierarchical \`AGENTS.md\`: root + \`src/\` + \`src/{module}/\` — generated by \`/init-deep\`
 `
 
 // ─── Domain INDEX.md ──────────────────────────────────────────────────────────
 
 const DOMAIN_INDEX = `# Domain Index
 
-Auto-populated by \`/init-deep\`. Update after major refactors.
+Global index of business domain documentation.
 
-## How to use
+Serves two purposes:
+1. **CARL lookup table** — \`carl-inject.ts\` reads \`Keywords:\` lines to match prompt words and inject the listed \`Files:\`
+2. **Planner orientation** — \`@planner\` reads this before interviewing to know what domain knowledge exists
 
-The CARL plugin reads this file to inject relevant context when you reference domain concepts.
 Run \`/init-deep\` to auto-populate from the codebase.
-
-## Entities
-
-<!-- Format: ### EntityName / File: path/to/file.ts / Relations: ... -->
-<!-- Added by /init-deep -->
-
-## Services / Repositories
-
-<!-- Format: ### ServiceName / File: path/to/service.ts / Methods: ... -->
-<!-- Added by /init-deep -->
-
-## API Routes
-
-<!-- Format: ### METHOD /api/path / File: app/api/.../route.ts / Auth: yes/no -->
-<!-- Added by /init-deep -->
-
-## UI Components
-
-<!-- Format: ### ComponentName / File: path/to/component.tsx / Props: ... -->
-<!-- Added by /init-deep -->
-
-## Patterns
-
-<!-- Recurring implementation patterns found in this codebase -->
-<!-- Added by /init-deep -->
-
-## Data Flow
-
-<!-- How data moves through the system -->
-<!-- Added by /init-deep or manually -->
+Update manually as you document business domains.
 
 ---
 
-*Run \`/init-deep\` to auto-populate this index from your codebase.*
+## Format
+
+Each entry:
+\`\`\`
+## {domain}
+Keywords: keyword1, keyword2, keyword3
+Files:
+  - {domain}/rules.md — Core business rules
+  - {domain}/limits.md — Limits, thresholds, quotas
+  - {domain}/edge-cases.md — Known edge cases and expected behavior
+\`\`\`
+
+---
+
+## (no domains yet)
+
+Run \`/init-deep\` to scan the codebase and generate initial domain entries.
+
+Add entries manually as you document business rules:
+
+\`\`\`
+## payments
+Keywords: payment, stripe, checkout, invoice, subscription, billing, charge
+Files:
+  - payments/rules.md — Core payment processing rules
+  - payments/edge-cases.md — Failed payments, retries, refunds
+\`\`\`
+
+---
+
+*Planner reads this index before interviewing to know what domain knowledge exists.*
+*carl-inject reads \`Keywords:\` lines to match prompt words and inject \`Files:\` entries.*
+*UNIFY updates this file after each feature that touches a documented domain.*
 `
 
 // ─── Manifest ─────────────────────────────────────────────────────────────────
 
 const MANIFEST = `# Principles Manifest
+# CARL lookup table — maps keywords to architectural principle files.
+# Read by carl-inject.ts plugin on every UserPromptSubmit.
+#
+# Format:
+#   {KEY}_STATE=active|inactive
+#   {KEY}_RECALL=comma, separated, keywords
+#   {KEY}_FILE=docs/principles/{file}.md
+#
+# When a prompt word matches any keyword in _RECALL, the corresponding _FILE
+# is injected into the agent's context before it processes the prompt.
+# Add entries as /init-deep discovers patterns, or manually as you codify decisions.
 
-CARL lookup table — maps domain keywords to relevant files and patterns.
-Updated by /init-deep and manually over time.
+AUTH_STATE=active
+AUTH_RECALL=auth, authentication, login, logout, session, token, jwt, oauth, clerk, middleware
+AUTH_FILE=docs/principles/auth-patterns.md
 
-## Format
+ERROR_STATE=active
+ERROR_RECALL=error, exception, try, catch, throw, failure, handle, boundary
+ERROR_FILE=docs/principles/error-handling.md
 
-Each entry: KEYWORD → file:path | pattern:name | agent:name
+API_STATE=active
+API_RECALL=api, route, endpoint, handler, request, response, next, http, rest
+API_FILE=docs/principles/api-patterns.md
 
----
+DATA_STATE=active
+DATA_RECALL=database, prisma, query, schema, migration, model, repository, orm
+DATA_FILE=docs/principles/data-patterns.md
 
-## Keywords
+TEST_STATE=active
+TEST_RECALL=test, spec, jest, mock, fixture, coverage, unit, integration, e2e
+TEST_FILE=docs/principles/test-patterns.md
 
-<!-- api → file:app/api -->
-<!-- auth → file:middleware.ts | agent:@validator -->
-<!-- database → file:prisma/schema.prisma | file:lib/db.ts -->
-<!-- test → skill:test-writing | agent:@validator -->
-<!-- plan → file:plan.md | agent:@planner -->
-<!-- spec → file:docs/specs/ | agent:@spec-writer -->
-<!-- implement → agent:@implementer | file:plan.md -->
-<!-- validate → agent:@validator | file:docs/specs/ -->
-<!-- review → agent:@reviewer -->
-<!-- migration → skill:schema-migration | tool:next_version -->
-<!-- component → skill:page-creation -->
-<!-- action → skill:server-action-creation -->
-<!-- route → skill:api-route-creation -->
-<!-- pattern → tool:find_pattern -->
-
-## Architectural Directives
-
-<!-- Non-negotiable rules from the project architect -->
-<!-- Format: DIRECTIVE: description -->
-<!-- Example: DIRECTIVE: Always validate inputs with Zod at API boundaries -->
-<!-- Example: DIRECTIVE: Never expose Prisma types to the API layer — use DTOs -->
-
-## Technology Decisions
-
-<!-- Format: DECISION: <what> — REASON: <why> — DATE: YYYY-MM-DD -->
-
----
-
-*Populate this file as you discover patterns. CARL uses it to inject context automatically.*
+# ── Add project-specific entries below ──────────────────────────────────────
+# Example:
+# PAYMENT_STATE=active
+# PAYMENT_RECALL=payment, stripe, checkout, invoice, subscription, billing
+# PAYMENT_FILE=docs/principles/payment-patterns.md
 `

@@ -14,47 +14,52 @@ export function writePlugins(projectDir: string): void {
   writeFileSync(path.join(pluginsDir, "comment-checker.ts"), COMMENT_CHECKER)
   writeFileSync(path.join(pluginsDir, "hashline-read.ts"), HASHLINE_READ)
   writeFileSync(path.join(pluginsDir, "hashline-edit.ts"), HASHLINE_EDIT)
+  writeFileSync(path.join(pluginsDir, "directory-agents-injector.ts"), DIR_AGENTS_INJECTOR)
 }
 
 // ─── Env Protection ──────────────────────────────────────────────────────────
 
-const ENV_PROTECTION = `import { Plugin } from "@opencode-ai/plugin"
+const ENV_PROTECTION = `import type { Plugin } from "@opencode-ai/plugin"
 
-export default {
-  name: "env-protection",
-  description: "Block accidental reads/writes of sensitive files",
+// Blocks reads/writes of sensitive files before any tool executes.
+// Real API: tool.execute.before(input, output) — throw Error to abort.
 
-  hooks: {
-    "tool.execute.before": async ({ tool, input, abort }) => {
-      const sensitivePatterns = [
-        /\\.env($|\\.)/i,
-        /secret/i,
-        /credential/i,
-        /\\.pem$/i,
-        /id_rsa/i,
-        /\\.key$/i,
-      ]
+const SENSITIVE = [
+  /\\.env($|\\.)/i,
+  /secret/i,
+  /credential/i,
+  /\\.pem$/i,
+  /id_rsa/i,
+  /\\.key$/i,
+]
 
-      const filePath: string = input?.path ?? input?.file_path ?? input?.filename ?? ""
-      if (!filePath) return
+export default (async ({ directory: _directory }: { directory: string }) => ({
+  "tool.execute.before": async (
+    input: { tool: string; sessionID: string; callID: string },
+    output: { args: any }
+  ) => {
+    const filePath: string =
+      output.args?.path ?? output.args?.file_path ?? output.args?.filename ?? ""
+    if (!filePath) return
 
-      const isSensitive = sensitivePatterns.some((p) => p.test(filePath))
-      if (isSensitive) {
-        abort(
-          \`[env-protection] Blocked access to sensitive file: \${filePath}\\n\` +
-          \`If this is intentional, temporarily disable the env-protection plugin.\`
-        )
-      }
-    },
+    if (SENSITIVE.some((p) => p.test(filePath))) {
+      throw new Error(
+        \`[env-protection] Blocked access to sensitive file: \${filePath}\\n\` +
+        \`If intentional, temporarily disable the env-protection plugin.\`
+      )
+    }
   },
-} satisfies Plugin
+})) satisfies Plugin
 `
 
 // ─── Auto Format ─────────────────────────────────────────────────────────────
 
-const AUTO_FORMAT = `import { Plugin } from "@opencode-ai/plugin"
+const AUTO_FORMAT = `import type { Plugin } from "@opencode-ai/plugin"
 import { execSync } from "child_process"
 import path from "path"
+
+// Auto-formats files after Write/Edit tool calls.
+// Real API: tool.execute.after(input, output) — input.args has the file path.
 
 const FORMATTERS: Record<string, string> = {
   ".ts": "prettier --write",
@@ -70,121 +75,220 @@ const FORMATTERS: Record<string, string> = {
   ".rs": "rustfmt",
 }
 
-export default {
-  name: "auto-format",
-  description: "Auto-format files after Write/Edit tool calls",
+export default (async ({ directory: _directory }: { directory: string }) => ({
+  "tool.execute.after": async (
+    input: { tool: string; sessionID: string; callID: string; args: any },
+    _output: { title: string; output: string; metadata: any }
+  ) => {
+    if (!["Write", "Edit", "MultiEdit"].includes(input.tool)) return
 
-  hooks: {
-    "tool.execute.after": async ({ tool, input, output }) => {
-      if (!["Write", "Edit", "MultiEdit"].includes(tool)) return
+    const filePath: string = input.args?.path ?? input.args?.file_path ?? ""
+    if (!filePath) return
 
-      const filePath: string = input?.path ?? input?.file_path ?? ""
-      if (!filePath) return
+    const formatter = FORMATTERS[path.extname(filePath)]
+    if (!formatter) return
 
-      const ext = path.extname(filePath)
-      const formatter = FORMATTERS[ext]
-      if (!formatter) return
-
-      try {
-        execSync(\`\${formatter} "\${filePath}"\`, { stdio: "ignore" })
-      } catch {
-        // Formatter not available — skip silently
-      }
-    },
+    try {
+      execSync(\`\${formatter} "\${filePath}"\`, { stdio: "ignore" })
+    } catch {
+      // Formatter not available — skip silently
+    }
   },
-} satisfies Plugin
+})) satisfies Plugin
 `
 
 // ─── Plan Autoload ────────────────────────────────────────────────────────────
 
-const PLAN_AUTOLOAD = `import { Plugin } from "@opencode-ai/plugin"
-import { existsSync, readFileSync } from "fs"
+const PLAN_AUTOLOAD = `import type { Plugin } from "@opencode-ai/plugin"
+import { existsSync, readFileSync, unlinkSync } from "fs"
 import path from "path"
 
-export default {
-  name: "plan-autoload",
-  description: "Auto-inject active plan into context when session becomes idle",
+// Injects active plan into system context when a .plan-ready IPC flag exists.
+// Uses experimental.chat.system.transform — fires before every AI message.
+// The flag is deleted after injection so it only fires once.
 
-  hooks: {
-    "session.idle": async ({ cwd, inject }) => {
-      const readyFile = path.join(cwd, ".opencode", "state", ".plan-ready")
-      if (!existsSync(readyFile)) return
+export default (async ({ directory }: { directory: string }) => ({
+  "experimental.chat.system.transform": async (
+    _input: { sessionID?: string; model: any },
+    output: { system: string[] }
+  ) => {
+    const readyFile = path.join(directory, ".opencode", "state", ".plan-ready")
+    if (!existsSync(readyFile)) return
 
-      const planPath = readFileSync(readyFile, "utf-8").trim()
-      const fullPath = path.isAbsolute(planPath) ? planPath : path.join(cwd, planPath)
+    const planPath = readFileSync(readyFile, "utf-8").trim()
+    const fullPath = path.isAbsolute(planPath) ? planPath : path.join(directory, planPath)
+    if (!existsSync(fullPath)) return
 
-      if (!existsSync(fullPath)) return
+    const planContent = readFileSync(fullPath, "utf-8")
 
-      const planContent = readFileSync(fullPath, "utf-8")
-      inject(
-        \`[plan-autoload] Active plan detected at \${planPath}:\\n\\n\${planContent}\\n\\n\` +
-        \`Use /implement to execute this plan, or /plan to revise it.\`
-      )
-    },
+    try { unlinkSync(readyFile) } catch { /* ok */ }
+
+    output.system.push(
+      \`[plan-autoload] Active plan detected at \${planPath}:\\n\\n\${planContent}\\n\\n\` +
+      \`Use /implement to execute this plan, or /plan to revise it.\`
+    )
   },
-} satisfies Plugin
+})) satisfies Plugin
 `
 
 // ─── CARL Inject ──────────────────────────────────────────────────────────────
 
-const CARL_INJECT = `import { Plugin } from "@opencode-ai/plugin"
+const CARL_INJECT = `import type { Plugin } from "@opencode-ai/plugin"
 import { existsSync, readFileSync } from "fs"
 import path from "path"
 
 // CARL = Context-Aware Retrieval Layer
-// Extracts keywords from prompts and injects relevant domain docs
+// Reads docs/principles/manifest (KEY=VALUE format) and docs/domain/INDEX.md.
+// Injects relevant files into the user message based on keyword matching.
+// Uses chat.message hook — fires when a user message is being assembled.
 
-export default {
-  name: "carl-inject",
-  description: "Inject relevant domain context based on prompt keywords",
+interface PrincipleEntry {
+  key: string
+  recall: string[]
+  file: string
+}
 
-  hooks: {
-    "tool.execute.before": async ({ tool, input, inject, cwd }) => {
-      if (tool !== "UserPromptSubmit") return
+interface DomainEntry {
+  domain: string
+  keywords: string[]
+  files: Array<{ path: string; description: string }>
+}
 
-      const prompt: string = input?.prompt ?? ""
-      if (!prompt || prompt.length < 20) return
+function parsePrinciplesManifest(content: string): PrincipleEntry[] {
+  const entries: PrincipleEntry[] = []
+  const lines = content.split("\\n").filter((l) => !l.startsWith("#") && l.trim())
 
-      const manifestPath = path.join(cwd, "docs", "principles", "manifest")
-      const indexPath = path.join(cwd, "docs", "domain", "INDEX.md")
+  const byKey: Record<string, Record<string, string>> = {}
+  for (const line of lines) {
+    const match = /^([A-Z_]+)_(STATE|RECALL|FILE)=(.*)$/.exec(line)
+    if (!match) continue
+    const [, prefix, field, value] = match
+    if (!byKey[prefix]) byKey[prefix] = {}
+    byKey[prefix][field] = value.trim()
+  }
 
-      if (!existsSync(manifestPath) || !existsSync(indexPath)) return
+  for (const [key, fields] of Object.entries(byKey)) {
+    if (fields["STATE"] !== "active") continue
+    if (!fields["RECALL"] || !fields["FILE"]) continue
+    entries.push({
+      key,
+      recall: fields["RECALL"].split(",").map((k) => k.trim().toLowerCase()),
+      file: fields["FILE"],
+    })
+  }
 
+  return entries
+}
+
+function parseDomainIndex(content: string): DomainEntry[] {
+  const entries: DomainEntry[] = []
+  const sections = content.split(/^## /m).slice(1)
+
+  for (const section of sections) {
+    const lines = section.split("\\n")
+    const domain = lines[0].trim()
+    const keywordsLine = lines.find((l) => l.startsWith("Keywords:"))
+    const filesStart = lines.findIndex((l) => l.startsWith("Files:"))
+
+    if (!keywordsLine || filesStart === -1) continue
+
+    const keywords = keywordsLine
+      .replace("Keywords:", "")
+      .split(",")
+      .map((k) => k.trim().toLowerCase())
+
+    const files: Array<{ path: string; description: string }> = []
+    for (let i = filesStart + 1; i < lines.length; i++) {
+      const fileMatch = /^\\s+-\\s+([^—]+)(?:—\\s+(.*))?$/.exec(lines[i])
+      if (!fileMatch) break
+      files.push({ path: fileMatch[1].trim(), description: fileMatch[2]?.trim() ?? "" })
+    }
+
+    entries.push({ domain, keywords, files })
+  }
+
+  return entries
+}
+
+export default (async ({ directory }: { directory: string }) => ({
+  "chat.message": async (
+    _input: { sessionID: string; agent?: string; messageID?: string },
+    output: { message: any; parts: any[] }
+  ) => {
+    // Extract text from the user message parts
+    const msgParts: any[] = (output.message as any)?.parts ?? []
+    const prompt = msgParts
+      .filter((p: any) => p.type === "text")
+      .map((p: any) => p.text as string)
+      .join(" ")
+
+    if (!prompt || prompt.length < 20) return
+
+    const manifestPath = path.join(directory, "docs", "principles", "manifest")
+    const indexPath = path.join(directory, "docs", "domain", "INDEX.md")
+
+    const promptWords = new Set(
+      prompt.toLowerCase().split(/\\W+/).filter((w) => w.length > 3)
+    )
+
+    const injected: string[] = []
+
+    // ── Principles manifest ──
+    if (existsSync(manifestPath)) {
       const manifest = readFileSync(manifestPath, "utf-8")
+      const principles = parsePrinciplesManifest(manifest)
+
+      for (const entry of principles) {
+        const matched = entry.recall.some((kw) => promptWords.has(kw))
+        if (!matched) continue
+
+        const filePath = path.join(directory, entry.file)
+        if (!existsSync(filePath)) continue
+
+        const content = readFileSync(filePath, "utf-8")
+        injected.push(\`[carl-inject] Principle (\${entry.key}):\\n\${content}\`)
+      }
+    }
+
+    // ── Domain index ──
+    if (existsSync(indexPath)) {
       const index = readFileSync(indexPath, "utf-8")
+      const domains = parseDomainIndex(index)
 
-      // Extract keywords from prompt (simple heuristic)
-      const words = prompt.toLowerCase().split(/\\W+/).filter((w) => w.length > 4)
-      const uniqueWords = [...new Set(words)]
+      for (const entry of domains) {
+        const matched = entry.keywords.some((kw) => promptWords.has(kw))
+        if (!matched) continue
 
-      // Find relevant entries in manifest
-      const manifestLines = manifest.split("\\n")
-      const relevantEntries = manifestLines.filter((line) =>
-        uniqueWords.some((word) => line.toLowerCase().includes(word))
-      )
+        for (const file of entry.files.slice(0, 3)) {
+          const filePath = path.join(directory, "docs", "domain", file.path)
+          if (!existsSync(filePath)) continue
 
-      if (relevantEntries.length === 0) return
+          const content = readFileSync(filePath, "utf-8")
+          injected.push(\`[carl-inject] Domain (\${entry.domain} / \${file.path}):\\n\${content}\`)
+        }
+      }
+    }
 
-      const contextBlock = [
-        "[carl-inject] Relevant domain context:",
-        ...relevantEntries.slice(0, 5),
-        "",
-        "Full index: docs/domain/INDEX.md",
-      ].join("\\n")
-
-      inject(contextBlock)
-    },
+    if (injected.length > 0) {
+      output.parts.push({
+        type: "text",
+        text: injected.join("\\n\\n---\\n\\n"),
+      })
+    }
   },
-} satisfies Plugin
+})) satisfies Plugin
 `
 
 // ─── Skill Inject ────────────────────────────────────────────────────────────
 
-const SKILL_INJECT = `import { Plugin } from "@opencode-ai/plugin"
+const SKILL_INJECT = `import type { Plugin } from "@opencode-ai/plugin"
 import { existsSync, readFileSync } from "fs"
 import path from "path"
 
-// Maps file path patterns to skill names
+// Injects skill instructions when agent reads a file matching a skill pattern.
+// Uses tool.execute.after on Read — appends skill to read result so agent has
+// instructions in context before writing the file.
+
 const SKILL_MAP: Array<{ pattern: RegExp; skill: string }> = [
   { pattern: /\\.test\\.(ts|tsx|js|jsx)$/, skill: "test-writing" },
   { pattern: /app\\/.*\\/page\\.(tsx|jsx)$/, skill: "page-creation" },
@@ -193,42 +297,43 @@ const SKILL_MAP: Array<{ pattern: RegExp; skill: string }> = [
   { pattern: /schema\\.prisma$/, skill: "schema-migration" },
 ]
 
-export default {
-  name: "skill-inject",
-  description: "Inject relevant skill instructions based on file being edited",
+export default (async ({ directory }: { directory: string }) => ({
+  "tool.execute.after": async (
+    input: { tool: string; sessionID: string; callID: string; args: any },
+    output: { title: string; output: string; metadata: any }
+  ) => {
+    if (input.tool !== "Read") return
 
-  hooks: {
-    "tool.execute.before": async ({ tool, input, inject, cwd }) => {
-      if (!["Write", "Edit", "MultiEdit"].includes(tool)) return
+    const filePath: string = input.args?.path ?? input.args?.file_path ?? ""
+    if (!filePath) return
 
-      const filePath: string = input?.path ?? input?.file_path ?? ""
-      if (!filePath) return
+    const match = SKILL_MAP.find(({ pattern }) => pattern.test(filePath))
+    if (!match) return
 
-      const match = SKILL_MAP.find(({ pattern }) => pattern.test(filePath))
-      if (!match) return
+    const skillPath = path.join(directory, ".opencode", "skills", match.skill, "SKILL.md")
+    if (!existsSync(skillPath)) return
 
-      const skillPath = path.join(cwd, ".opencode", "skills", match.skill, "SKILL.md")
-      if (!existsSync(skillPath)) return
-
-      const skillContent = readFileSync(skillPath, "utf-8")
-      inject(\`[skill-inject] Applying skill: \${match.skill}\\n\\n\${skillContent}\`)
-    },
+    const skillContent = readFileSync(skillPath, "utf-8")
+    output.output +=
+      \`\\n\\n[skill-inject] Skill activated for \${match.skill}:\\n\\n\${skillContent}\`
   },
-} satisfies Plugin
+})) satisfies Plugin
 `
 
 // ─── Intent Gate ─────────────────────────────────────────────────────────────
 
-const INTENT_GATE = `import { Plugin } from "@opencode-ai/plugin"
+const INTENT_GATE = `import type { Plugin } from "@opencode-ai/plugin"
 
-// Intent classification — annotates the session context before agent routing
-const INTENT_TYPES = {
+// Classifies prompt intent and annotates the message before the agent processes it.
+// Uses chat.message hook — fires when a user message is being assembled.
+
+const INTENT_TYPES: Record<string, string[]> = {
   RESOLVE_PROBLEM: ["fix", "bug", "error", "broken", "crash", "fail", "issue", "problem"],
   REFACTOR: ["refactor", "cleanup", "restructure", "reorganize", "improve", "simplify"],
-  ADD_FEATURE: ["add", "implement", "create", "build", "new feature", "support"],
+  ADD_FEATURE: ["add", "implement", "create", "build", "feature", "support"],
   RESEARCH: ["understand", "explain", "how does", "what is", "why does", "analyze"],
-  MIGRATION: ["migrate", "upgrade", "move", "port", "convert", "update dependency"],
-  REVIEW: ["review", "check", "audit", "inspect", "look at"],
+  MIGRATION: ["migrate", "upgrade", "move", "port", "convert"],
+  REVIEW: ["review", "check", "audit", "inspect"],
 }
 
 function classifyIntent(prompt: string): string {
@@ -239,74 +344,78 @@ function classifyIntent(prompt: string): string {
   return "GENERAL"
 }
 
-export default {
-  name: "intent-gate",
-  description: "Classify prompt intent and annotate context for better agent routing",
+export default (async ({ directory: _directory }: { directory: string }) => ({
+  "chat.message": async (
+    _input: { sessionID: string; agent?: string; messageID?: string },
+    output: { message: any; parts: any[] }
+  ) => {
+    const msgParts: any[] = (output.message as any)?.parts ?? []
+    const prompt = msgParts
+      .filter((p: any) => p.type === "text")
+      .map((p: any) => p.text as string)
+      .join(" ")
 
-  hooks: {
-    "session.start": async ({ inject }) => {
-      // Placeholder — intent is classified per-prompt
-    },
+    if (!prompt || prompt.length < 15) return
 
-    "tool.execute.before": async ({ tool, input, inject }) => {
-      if (tool !== "UserPromptSubmit") return
+    const intent = classifyIntent(prompt)
+    if (intent === "GENERAL") return
 
-      const prompt: string = input?.prompt ?? ""
-      if (!prompt || prompt.length < 15) return
-
-      const intent = classifyIntent(prompt)
-      if (intent === "GENERAL") return
-
-      inject(
+    output.parts.push({
+      type: "text",
+      text:
         \`[intent-gate] Detected intent: \${intent}\\n\` +
-        \`Route to appropriate agent: RESOLVE_PROBLEM→@implementer, REFACTOR→@implementer, \` +
-        \`ADD_FEATURE→@planner+@implementer, RESEARCH→inline, MIGRATION→@planner+@implementer, REVIEW→@reviewer\`
-      )
-    },
+        \`Routing guide: RESOLVE_PROBLEM → @implementer, REFACTOR → @implementer, \` +
+        \`ADD_FEATURE → @planner then @implementer, RESEARCH → inline, \` +
+        \`MIGRATION → @planner then @implementer, REVIEW → @reviewer\`,
+    })
   },
-} satisfies Plugin
+})) satisfies Plugin
 `
 
 // ─── Todo Enforcer ────────────────────────────────────────────────────────────
 
-const TODO_ENFORCER = `import { Plugin } from "@opencode-ai/plugin"
+const TODO_ENFORCER = `import type { Plugin } from "@opencode-ai/plugin"
 import { existsSync, readFileSync } from "fs"
 import path from "path"
 
-export default {
-  name: "todo-enforcer",
-  description: "Re-inject incomplete tasks when session goes idle to prevent drift",
+// Re-injects incomplete tasks into system context before every AI message.
+// Uses experimental.chat.system.transform — fires before each AI request.
+// This makes loop completion deterministic: agent always sees pending todos.
 
-  hooks: {
-    "session.idle": async ({ cwd, inject }) => {
-      const statePath = path.join(cwd, ".opencode", "state", "execution-state.md")
-      if (!existsSync(statePath)) return
+export default (async ({ directory }: { directory: string }) => ({
+  "experimental.chat.system.transform": async (
+    _input: { sessionID?: string; model: any },
+    output: { system: string[] }
+  ) => {
+    const statePath = path.join(directory, ".opencode", "state", "execution-state.md")
+    if (!existsSync(statePath)) return
 
-      const state = readFileSync(statePath, "utf-8")
+    const state = readFileSync(statePath, "utf-8")
 
-      // Extract incomplete tasks (lines with [ ] — unchecked checkboxes)
-      const incomplete = state
-        .split("\\n")
-        .filter((line) => /^\\s*-\\s*\\[\\s*\\]/.test(line))
-        .map((line) => line.trim())
+    // Extract incomplete tasks (lines with [ ] — unchecked checkboxes)
+    const incomplete = state
+      .split("\\n")
+      .filter((line) => /^\\s*-\\s*\\[\\s*\\]/.test(line))
+      .map((line) => line.trim())
 
-      if (incomplete.length === 0) return
+    if (incomplete.length === 0) return
 
-      inject(
-        \`[todo-enforcer] You have \${incomplete.length} incomplete task(s):\\n\\n\` +
-        incomplete.join("\\n") +
-        \`\\n\\nDo not stop until all tasks are complete. Continue working.\`
-      )
-    },
+    output.system.push(
+      \`[todo-enforcer] \${incomplete.length} incomplete task(s) remaining:\\n\\n\` +
+      incomplete.join("\\n") +
+      \`\\n\\nDo not stop until all tasks are complete. Continue working.\`
+    )
   },
-} satisfies Plugin
+})) satisfies Plugin
 `
 
 // ─── Comment Checker ──────────────────────────────────────────────────────────
 
-const COMMENT_CHECKER = `import { Plugin } from "@opencode-ai/plugin"
+const COMMENT_CHECKER = `import type { Plugin } from "@opencode-ai/plugin"
 
-// Patterns that indicate obvious/redundant comments
+// Detects obvious/redundant comments after Write/Edit and appends a reminder.
+// Uses tool.execute.after — appends to output.output so agent sees the warning.
+
 const OBVIOUS_PATTERNS = [
   /\\/\\/ increment .*/i,
   /\\/\\/ set .* to/i,
@@ -320,19 +429,18 @@ const OBVIOUS_PATTERNS = [
   /\\/\\/ assign/i,
 ]
 
-// Patterns to IGNORE (legitimate comments)
 const IGNORE_PATTERNS = [
-  /\\/\\/\\s*@ts-/,        // TypeScript directives
-  /\\/\\/\\s*eslint/,       // ESLint directives
-  /\\/\\/\\s*TODO/i,        // TODOs
-  /\\/\\/\\s*FIXME/i,       // FIXMEs
-  /\\/\\/\\s*HACK/i,        // HACKs
-  /\\/\\/\\s*NOTE:/i,       // Notes
-  /\\/\\/\\s*BUG:/i,        // Bug markers
-  /\\/\\*\\*/,              // JSDoc
-  /\\s*\\*\\s/,             // JSDoc continuation
-  /given|when|then/i,      // BDD
-  /describe|it\\(/,        // Test descriptions
+  /\\/\\/\\s*@ts-/,
+  /\\/\\/\\s*eslint/,
+  /\\/\\/\\s*TODO/i,
+  /\\/\\/\\s*FIXME/i,
+  /\\/\\/\\s*HACK/i,
+  /\\/\\/\\s*NOTE:/i,
+  /\\/\\/\\s*BUG:/i,
+  /\\/\\*\\*/,
+  /\\s*\\*\\s/,
+  /given|when|then/i,
+  /describe|it\\(/,
 ]
 
 function hasObviousComments(content: string): string[] {
@@ -341,11 +449,8 @@ function hasObviousComments(content: string): string[] {
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i]
-    const isIgnored = IGNORE_PATTERNS.some((p) => p.test(line))
-    if (isIgnored) continue
-
-    const isObvious = OBVIOUS_PATTERNS.some((p) => p.test(line))
-    if (isObvious) {
+    if (IGNORE_PATTERNS.some((p) => p.test(line))) continue
+    if (OBVIOUS_PATTERNS.some((p) => p.test(line))) {
       found.push(\`Line \${i + 1}: \${line.trim()}\`)
     }
   }
@@ -353,37 +458,35 @@ function hasObviousComments(content: string): string[] {
   return found
 }
 
-export default {
-  name: "comment-checker",
-  description: "Detect and flag obvious/redundant code comments",
+export default (async ({ directory: _directory }: { directory: string }) => ({
+  "tool.execute.after": async (
+    input: { tool: string; sessionID: string; callID: string; args: any },
+    output: { title: string; output: string; metadata: any }
+  ) => {
+    if (!["Write", "Edit"].includes(input.tool)) return
 
-  hooks: {
-    "tool.execute.after": async ({ tool, input, inject }) => {
-      if (!["Write", "Edit"].includes(tool)) return
+    const content: string = input.args?.content ?? input.args?.new_string ?? ""
+    if (!content) return
 
-      const content: string = input?.content ?? input?.new_string ?? ""
-      if (!content) return
+    const obvious = hasObviousComments(content)
+    if (obvious.length === 0) return
 
-      const obvious = hasObviousComments(content)
-      if (obvious.length === 0) return
-
-      inject(
-        \`[comment-checker] \${obvious.length} potentially obvious comment(s) detected:\\n\` +
-        obvious.slice(0, 3).join("\\n") +
-        \`\\nConsider removing redundant comments — code should be self-documenting.\`
-      )
-    },
+    output.output +=
+      \`\\n\\n[comment-checker] \${obvious.length} potentially obvious comment(s) detected:\\n\` +
+      obvious.slice(0, 3).join("\\n") +
+      \`\\nConsider removing redundant comments — code should be self-documenting.\`
   },
-} satisfies Plugin
+})) satisfies Plugin
 `
 
 // ─── Hashline Read ────────────────────────────────────────────────────────────
 
-const HASHLINE_READ = `import { Plugin } from "@opencode-ai/plugin"
+const HASHLINE_READ = `import type { Plugin } from "@opencode-ai/plugin"
 import crypto from "crypto"
 
-// Adds NN#XX: prefix to each line in Read tool output
-// NN = line number, XX = 2-char hash for stable reference
+// Tags each line in Read output with NN#XX: prefix for stable hash references.
+// Agent uses these tags when editing — hashline-edit.ts validates them.
+// Uses tool.execute.after — sets output.output to the tagged version.
 
 function hashLine(line: string): string {
   return crypto.createHash("md5").update(line).digest("hex").slice(0, 2)
@@ -400,32 +503,33 @@ function addHashlines(content: string): string {
     .join("\\n")
 }
 
-export default {
-  name: "hashline-read",
-  description: "Add NN#XX hashline prefixes to Read tool output for stable references",
+export default (async ({ directory: _directory }: { directory: string }) => ({
+  "tool.execute.after": async (
+    input: { tool: string; sessionID: string; callID: string; args: any },
+    output: { title: string; output: string; metadata: any }
+  ) => {
+    if (input.tool !== "Read") return
+    if (typeof output.output !== "string") return
 
-  hooks: {
-    "tool.execute.after": async ({ tool, output, transformOutput }) => {
-      if (tool !== "Read") return
-      if (typeof output !== "string") return
-
-      transformOutput(addHashlines(output))
-    },
+    output.output = addHashlines(output.output)
   },
-} satisfies Plugin
+})) satisfies Plugin
 `
 
 // ─── Hashline Edit ────────────────────────────────────────────────────────────
 
-const HASHLINE_EDIT = `import { Plugin } from "@opencode-ai/plugin"
+const HASHLINE_EDIT = `import type { Plugin } from "@opencode-ai/plugin"
 import { existsSync, readFileSync } from "fs"
 import crypto from "crypto"
+
+// Validates hashline references before Edit tool calls.
+// Throws an Error (aborts the edit) if referenced hashes are stale.
+// Uses tool.execute.before — output.args has the edit arguments.
 
 function hashLine(line: string): string {
   return crypto.createHash("md5").update(line).digest("hex").slice(0, 2)
 }
 
-// Parse hashline references like "042#3f: const x = 1"
 const HASHLINE_REF = /^(\\d{3})#([a-f0-9]{2}):/
 
 function extractHashlineRefs(text: string): Array<{ lineNum: number; hash: string }> {
@@ -439,47 +543,101 @@ function extractHashlineRefs(text: string): Array<{ lineNum: number; hash: strin
     .filter((r): r is { lineNum: number; hash: string } => r !== null)
 }
 
-export default {
-  name: "hashline-edit",
-  description: "Validate hashline references before Edit tool calls — reject stale edits",
+export default (async ({ directory: _directory }: { directory: string }) => ({
+  "tool.execute.before": async (
+    input: { tool: string; sessionID: string; callID: string },
+    output: { args: any }
+  ) => {
+    if (input.tool !== "Edit") return
 
-  hooks: {
-    "tool.execute.before": async ({ tool, input, abort }) => {
-      if (tool !== "Edit") return
+    const filePath: string = output.args?.path ?? output.args?.file_path ?? ""
+    const oldString: string = output.args?.old_string ?? ""
 
-      const filePath: string = input?.path ?? input?.file_path ?? ""
-      const oldString: string = input?.old_string ?? ""
+    if (!filePath || !oldString || !existsSync(filePath)) return
 
-      if (!filePath || !oldString || !existsSync(filePath)) return
+    const refs = extractHashlineRefs(oldString)
+    if (refs.length === 0) return
 
-      // Check if the edit references hashlines
-      const refs = extractHashlineRefs(oldString)
-      if (refs.length === 0) return
+    const currentLines = readFileSync(filePath, "utf-8").split("\\n")
 
-      // Read current file and validate hashes
-      const currentContent = readFileSync(filePath, "utf-8")
-      const currentLines = currentContent.split("\\n")
+    for (const ref of refs) {
+      const lineIndex = ref.lineNum - 1
+      if (lineIndex >= currentLines.length) {
+        throw new Error(
+          \`[hashline-edit] Stale reference: line \${ref.lineNum} no longer exists in \${filePath}.\\n\` +
+          \`Re-read the file to get current hashlines.\`
+        )
+      }
 
-      for (const ref of refs) {
-        const lineIndex = ref.lineNum - 1
-        if (lineIndex >= currentLines.length) {
-          abort(
-            \`[hashline-edit] Stale reference: line \${ref.lineNum} no longer exists in \${filePath}.\\n\` +
-            \`Re-read the file to get current hashlines.\`
-          )
-          return
-        }
+      const currentHash = hashLine(currentLines[lineIndex])
+      if (currentHash !== ref.hash) {
+        throw new Error(
+          \`[hashline-edit] Stale reference at line \${ref.lineNum}: expected hash \${ref.hash}, got \${currentHash}.\\n\` +
+          \`Re-read the file to get current hashlines.\`
+        )
+      }
+    }
+  },
+})) satisfies Plugin
+`
 
-        const currentHash = hashLine(currentLines[lineIndex])
-        if (currentHash !== ref.hash) {
-          abort(
-            \`[hashline-edit] Stale reference at line \${ref.lineNum}: expected hash \${ref.hash}, got \${currentHash}.\\n\` +
-            \`Re-read the file to get current hashlines.\`
-          )
-          return
-        }
+// ─── Directory Agents Injector ────────────────────────────────────────────────
+
+const DIR_AGENTS_INJECTOR = `import type { Plugin } from "@opencode-ai/plugin"
+import { existsSync, readFileSync } from "fs"
+import path from "path"
+
+// Tier 1 context mechanism — hierarchical AGENTS.md injection.
+// When an agent reads a file, walks the directory tree from the file's location
+// to the project root and appends every AGENTS.md found to the Read output.
+// Injects from root → most specific (additive, layered context).
+// Uses tool.execute.after on Read — appends to output.output.
+
+function findAgentsMdFiles(filePath: string, projectRoot: string): string[] {
+  const result: string[] = []
+  let current = path.dirname(filePath)
+
+  // Walk up to project root (exclusive — root AGENTS.md is auto-loaded by OpenCode)
+  while (current !== projectRoot && current !== path.dirname(current)) {
+    const agentsMd = path.join(current, "AGENTS.md")
+    if (existsSync(agentsMd)) {
+      result.unshift(agentsMd) // prepend for root → specific order
+    }
+    current = path.dirname(current)
+  }
+
+  return result
+}
+
+export default (async ({ directory }: { directory: string }) => {
+  const injectedPaths = new Set<string>()
+
+  return {
+    "tool.execute.after": async (
+      input: { tool: string; sessionID: string; callID: string; args: any },
+      output: { title: string; output: string; metadata: any }
+    ) => {
+      if (input.tool !== "Read") return
+
+      const filePath: string = input.args?.path ?? input.args?.file_path ?? ""
+      if (!filePath || !filePath.startsWith(directory)) return
+
+      const agentsMdFiles = findAgentsMdFiles(filePath, directory)
+      const toInject: string[] = []
+
+      for (const agentsPath of agentsMdFiles) {
+        if (injectedPaths.has(agentsPath)) continue
+        injectedPaths.add(agentsPath)
+
+        const content = readFileSync(agentsPath, "utf-8")
+        const relPath = path.relative(directory, agentsPath)
+        toInject.push(\`[directory-agents-injector] Context from \${relPath}:\\n\\n\${content}\`)
+      }
+
+      if (toInject.length > 0) {
+        output.output += "\\n\\n" + toInject.join("\\n\\n---\\n\\n")
       }
     },
-  },
-} satisfies Plugin
+  }
+}) satisfies Plugin
 `

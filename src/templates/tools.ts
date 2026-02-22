@@ -307,6 +307,50 @@ export const lsp_workspace_symbols = tool({
   },
 })
 
+export const lsp_prepare_rename = tool({
+  name: "lsp_prepare_rename",
+  description: "Check if the symbol at the given position can be safely renamed. Returns the symbol name and its range.",
+  parameters: z.object({
+    file: z.string().describe("Source file path"),
+    line: z.number().describe("Line number (1-indexed)"),
+    character: z.number().describe("Character position (0-indexed)"),
+  }),
+  execute: async ({ file, line, character }) => {
+    try {
+      const content = require("fs").readFileSync(file, "utf-8")
+      const lines = content.split("\\n")
+      const lineContent = lines[line - 1] ?? ""
+      const before = lineContent.slice(0, character)
+      const after = lineContent.slice(character)
+      const symBefore = /[\\w$]+$/.exec(before)?.[0] ?? ""
+      const symAfter = /^[\\w$]*/.exec(after)?.[0] ?? ""
+      const symbol = symBefore + symAfter
+
+      if (!symbol) {
+        return { canRename: false, reason: "No symbol at the given position" }
+      }
+
+      // Symbols that cannot be renamed: language keywords
+      const KEYWORDS = new Set(["const", "let", "var", "function", "class", "import", "export", "return", "if", "else", "for", "while"])
+      if (KEYWORDS.has(symbol)) {
+        return { canRename: false, reason: \`'\${symbol}' is a language keyword\` }
+      }
+
+      return {
+        canRename: true,
+        symbol,
+        range: {
+          start: { line, character: character - symBefore.length },
+          end: { line, character: character + symAfter.length },
+        },
+        hint: "Call lsp_rename with newName to apply the rename across the workspace.",
+      }
+    } catch {
+      return { canRename: false, reason: "Could not read file" }
+    }
+  },
+})
+
 export const lsp_rename = tool({
   name: "lsp_rename",
   description: "Preview rename of a symbol across all files (dry-run only — apply with sed/Edit)",
