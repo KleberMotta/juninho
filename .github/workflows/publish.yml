@@ -5,24 +5,103 @@ on:
     tags:
       - "v*"
 
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: "Tipo de versão a publicar"
+        required: true
+        default: "alpha"
+        type: choice
+        options:
+          - alpha
+          - beta
+          - rc
+          - patch
+          - minor
+          - major
+
 jobs:
-  publish:
-    name: Publish
+  release:
+    name: Release
     runs-on: ubuntu-latest
     environment: release
     permissions:
-      contents: write  # for creating GitHub Release
-      id-token: write  # for npm provenance + Trusted Publisher OIDC
+      contents: write  # push commit + tag
+      id-token: write  # npm Trusted Publisher OIDC
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "24.x"  # Node 24+ ou npm ≥11.5.1 são exigidos pelo Trusted Publisher OIDC
+          node-version: "24.x"  # npm >=11.5.1 exigido pelo Trusted Publisher
           cache: "npm"
+
+      # ── Manual dispatch: calcula nova versão, faz commit e cria tag ──────────
+      - name: Bump version and create tag
+        if: github.event_name == 'workflow_dispatch'
+        id: bump
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          BUMP="${{ inputs.bump }}"
+          CURRENT=$(node -p "require('./package.json').version")
+
+          # Calcula nova versão com lógica pura em Node
+          NEW_VERSION=$(node -e "
+            const v      = '$CURRENT';
+            const bump   = '$BUMP';
+            const dashIdx = v.indexOf('-');
+            const base    = dashIdx >= 0 ? v.slice(0, dashIdx) : v;
+            const pre     = dashIdx >= 0 ? v.slice(dashIdx + 1) : '';
+            const [maj, min, pat] = base.split('.').map(Number);
+
+            if (bump === 'major') { console.log((maj+1)+'.0.0'); }
+            else if (bump === 'minor') { console.log(maj+'.'+(min+1)+'.0'); }
+            else if (bump === 'patch') { console.log(maj+'.'+min+'.'+(pat+1)); }
+            else {
+              // alpha / beta / rc
+              if (pre.startsWith(bump+'.')) {
+                const n = parseInt(pre.split('.')[1]) + 1;
+                console.log(base+'-'+bump+'.'+n);
+              } else {
+                // mudou tipo de prerelease ou era estável
+                console.log(base+'-'+bump+'.1');
+              }
+            }
+          ")
+
+          echo "NEW_VERSION=$NEW_VERSION" >> "$GITHUB_OUTPUT"
+          echo "Bumping: $CURRENT → $NEW_VERSION"
+
+          # Atualiza package.json
+          node -e "
+            const fs  = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json','utf8'));
+            pkg.version = '$NEW_VERSION';
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2)+'\n');
+          "
+
+          git add package.json
+          git commit -m "chore: release v\$NEW_VERSION [skip ci]"
+          git tag "v\$NEW_VERSION"
+          git push origin HEAD:main
+          git push origin "v\$NEW_VERSION"
+          echo "✓ Tag v\$NEW_VERSION criada e enviada"
+
+      # ── Resolve versão (manual ou via tag push) ───────────────────────────────
+      - name: Resolve version
+        id: version
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "VERSION=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Versão: $VERSION"
 
       - name: Install dependencies
         run: npm ci
@@ -30,44 +109,34 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Smoke test before publish
+      - name: Smoke test
         run: |
-          mkdir -p /tmp/pre-publish-test
-          node dist/cli.js setup /tmp/pre-publish-test
-          test -f /tmp/pre-publish-test/.opencode/.juninho-installed
-          echo "✓ Pre-publish smoke test passed"
-
-      - name: Verify version matches tag
-        run: |
-          PKG_VERSION=$(node -p "require('./package.json').version")
-          TAG_VERSION="${GITHUB_REF#refs/tags/v}"
-          if [ "$PKG_VERSION" != "$TAG_VERSION" ]; then
-            echo "❌ Version mismatch: package.json=$PKG_VERSION, tag=$TAG_VERSION"
-            exit 1
-          fi
-          echo "✓ Version matches tag: $PKG_VERSION"
+          mkdir -p /tmp/smoke
+          node dist/cli.js setup /tmp/smoke
+          test -f /tmp/smoke/.opencode/.juninho-installed
+          echo "✓ Smoke test passou"
 
       - name: Publish to npm
         run: |
-          # Prereleases (alpha, beta, rc) precisam de --tag explícito
-          VERSION=$(node -p "require('./package.json').version")
-          if [[ "$VERSION" == *"-alpha"* ]]; then TAG="alpha"
-          elif [[ "$VERSION" == *"-beta"* ]]; then TAG="beta"
-          elif [[ "$VERSION" == *"-rc"* ]]; then TAG="rc"
+          VERSION="${{ steps.version.outputs.VERSION }}"
+          if   [[ "$VERSION" == *"-alpha"* ]]; then TAG="alpha"
+          elif [[ "$VERSION" == *"-beta"* ]];  then TAG="beta"
+          elif [[ "$VERSION" == *"-rc"* ]];    then TAG="rc"
           else TAG="latest"
           fi
           npm publish --provenance --access public --tag "$TAG"
-          echo "✓ Published with tag: $TAG"
+          echo "✓ Publicado @kleber.mottajr/juninho@$VERSION com tag: $TAG"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: v${{ steps.version.outputs.VERSION }}
           generate_release_notes: true
           body: |
             ## Install
 
             ```bash
-            npm install -g juninho@${{ github.ref_name }}
+            npm install -g @kleber.mottajr/juninho@${{ steps.version.outputs.VERSION }}
             ```
 
             ## Usage
