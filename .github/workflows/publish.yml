@@ -48,7 +48,16 @@ jobs:
           echo "✓ Version matches tag: $PKG_VERSION"
 
       - name: Publish to npm
-        run: npm publish --provenance --access public
+        run: |
+          # Prereleases (alpha, beta, rc) precisam de --tag explícito
+          VERSION=$(node -p "require('./package.json').version")
+          if [[ "$VERSION" == *"-alpha"* ]]; then TAG="alpha"
+          elif [[ "$VERSION" == *"-beta"* ]]; then TAG="beta"
+          elif [[ "$VERSION" == *"-rc"* ]]; then TAG="rc"
+          else TAG="latest"
+          fi
+          npm publish --provenance --access public --tag "$TAG"
+          echo "✓ Published with tag: $TAG"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
