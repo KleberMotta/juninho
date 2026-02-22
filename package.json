@@ -11,6 +11,14 @@
   },
   "files": ["dist"],
   "keywords": ["opencode", "agents", "framework", "cli"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/KleberMotta/juninho"
+  },
+  "bugs": {
+    "url": "https://github.com/KleberMotta/juninho/issues"
+  },
+  "homepage": "https://github.com/KleberMotta/juninho#readme",
   "license": "MIT",
   "dependencies": {},
   "devDependencies": {
