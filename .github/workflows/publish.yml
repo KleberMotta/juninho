@@ -9,9 +9,10 @@ jobs:
   publish:
     name: Publish
     runs-on: ubuntu-latest
+    environment: release
     permissions:
       contents: write  # for creating GitHub Release
-      id-token: write  # for npm provenance
+      id-token: write  # for npm provenance + Trusted Publisher OIDC
 
     steps:
       - name: Checkout
@@ -49,8 +50,6 @@ jobs:
 
       - name: Publish to npm
         run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
