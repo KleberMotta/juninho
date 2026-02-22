@@ -18,6 +18,14 @@ Versionamento segue [Semantic Versioning](https://semver.org/lang/pt-BR/).
 
 ---
 
+## [1.0.0-alpha.2] — 2026-02-22
+
+### Fixed
+- Adicionado `repository.url` no `package.json` para validação de provenance
+- Workflow de publish: Node 24 para suporte OIDC nativo (npm ≥11.5.1)
+- Workflow de publish: removido `registry-url` que conflitava com Trusted Publisher
+- Workflow de publish: `--tag alpha/beta/rc` automático para prereleases
+
 ## [1.0.0-alpha.1] — 2026-02-22
 
 ### Adicionado
