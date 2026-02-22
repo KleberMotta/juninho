@@ -1,6 +1,6 @@
 # Referência de Agentes
 
-O juninho instala 7 agentes especializados em `.opencode/agents/`. Cada agente é um subagente do OpenCode com prompt, modelo e permissões específicas.
+O juninho instala 9 agentes especializados em `.opencode/agents/`. Cada agente é um subagente do OpenCode com prompt, modelo e permissões específicas.
 
 ## Como usar agentes
 
@@ -22,7 +22,7 @@ Ou via slash commands (que invocam os agentes internamente):
 
 ## @planner
 
-**Modelo:** claude-opus-4-5 | **Modo:** subagent
+**Modelo:** claude-opus-4-6 | **Modo:** subagent
 
 O agente estratégico central. Transforma objetivos vagos em planos executáveis.
 
@@ -55,7 +55,7 @@ O agente estratégico central. Transforma objetivos vagos em planos executáveis
 
 ## @plan-reviewer
 
-**Modelo:** claude-sonnet-4-5 | **Modo:** subagent | **Permissões:** task: deny, bash: deny
+**Modelo:** claude-sonnet-4-6 | **Modo:** subagent | **Permissões:** task: deny, bash: deny
 
 Porta de qualidade para planos. **Viés de aprovação** — rejeita apenas problemas que causariam falhas reais na execução.
 
@@ -74,7 +74,7 @@ Porta de qualidade para planos. **Viés de aprovação** — rejeita apenas prob
 
 ## @spec-writer
 
-**Modelo:** claude-opus-4-5 | **Modo:** subagent | **Write access:** `docs/specs/**`
+**Modelo:** claude-opus-4-6 | **Modo:** subagent | **Write access:** `docs/specs/**`
 
 Produz especificações detalhadas e implementáveis via entrevista estruturada.
 
@@ -100,7 +100,7 @@ Spec em `docs/specs/{feature-name}.md` com:
 
 ## @implementer
 
-**Modelo:** claude-sonnet-4-5 | **Modo:** subagent
+**Modelo:** claude-sonnet-4-6 | **Modo:** subagent
 
 Executa planos e specs com o loop **READ→ACT→COMMIT→VALIDATE**.
 
@@ -130,7 +130,7 @@ Usa referências `NN#XX:` para edições estáveis. Se o plugin `hashline-edit` 
 
 ## @validator
 
-**Modelo:** claude-sonnet-4-5 | **Modo:** subagent
+**Modelo:** claude-sonnet-4-6 | **Modo:** subagent
 
 Garante que implementações atendam suas especificações. **Lê a spec antes do código.**
 
@@ -152,7 +152,7 @@ Garante que implementações atendam suas especificações. **Lê a spec antes d
 
 ## @reviewer
 
-**Modelo:** claude-sonnet-4-5 | **Modo:** subagent | **Permissões:** bash: deny, edit: deny, write: deny
+**Modelo:** claude-sonnet-4-6 | **Modo:** subagent | **Permissões:** bash: deny, edit: deny, write: deny
 
 Revisor advisory — feedback de qualidade sem bloquear o pipeline.
 
@@ -175,7 +175,7 @@ Sempre inclui notas positivas. Veredicto: `LGTM | LGTM_WITH_NOTES | NEEDS_WORK`.
 
 ## @unify
 
-**Modelo:** claude-sonnet-4-5 | **Modo:** subagent
+**Modelo:** claude-sonnet-4-6 | **Modo:** subagent
 
 Fecha o loop após implementação: reconcilia, documenta e faz o ship.
 
@@ -189,10 +189,58 @@ Fecha o loop após implementação: reconcilia, documenta e faz o ship.
 
 ---
 
+## @explore
+
+**Modelo:** claude-haiku-4-6 | **Modo:** subagent | **Permissões:** write: deny, bash: deny
+
+Agente de pesquisa do codebase. Faz exploração paralela de arquivos, símbolos e padrões — **read-only**.
+
+### Quando é spawnado
+
+Pelo `@planner` na **Fase 1 (Metis)** para exploração paralela do codebase antes do planejamento.
+
+### Responsabilidades
+
+- Mapeamento de arquivos relevantes para o objetivo
+- Identificação de padrões e convenções existentes no projeto
+- Listagem de dependências e entidades envolvidas
+- Retorna contexto estruturado para o `@planner`
+
+### Permissões
+
+Sem escrita, sem bash destrutivo — apenas leitura e busca.
+
+---
+
+## @librarian
+
+**Modelo:** claude-haiku-4-6 | **Modo:** subagent | **Permissões:** write: deny
+
+Agente de pesquisa externa de documentação e OSS. Usa o **Context7 MCP** para buscar docs de bibliotecas atualizadas.
+
+### Quando é spawnado
+
+Pelo `@planner` na **Fase 1 (Metis)** para contextualizar dependências externas antes do planejamento.
+
+### Responsabilidades
+
+- Busca documentação atualizada de bibliotecas via Context7
+- Verifica APIs e contratos de SDKs usados no projeto
+- Retorna exemplos de código e notas de versão relevantes
+
+### Permissões
+
+Read-only — sem escrita no codebase.
+
+---
+
 ## Modelo mental: quando usar cada agente
 
 ```
 Objetivo vago → /plan (@planner)
+                    ↓
+              Fase 1 (Metis): exploração paralela
+              @explore (codebase) + @librarian (docs externos)
                     ↓
 Feature complexa → /spec (@spec-writer) → /plan → /implement
                                                        ↓

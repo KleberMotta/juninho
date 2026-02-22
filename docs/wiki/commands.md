@@ -195,6 +195,125 @@ Wave 3:
 
 ---
 
+## /check
+
+Roda todos os quality gates em sequência: TypeScript, linter e testes.
+
+```
+/check
+```
+
+**Equivalente a:**
+```bash
+tsc --noEmit && eslint . --max-warnings=0 && jest --passWithNoTests
+```
+
+**Quando usar:** antes de criar um PR ou após uma sessão de implementação longa — garante que tudo está limpo.
+
+---
+
+## /lint
+
+Roda apenas o linter.
+
+```
+/lint
+```
+
+**Equivalente a:**
+```bash
+eslint . --max-warnings=0
+```
+
+**Quando usar:** após ajustes de estilo ou quando você sabe que TypeScript e testes estão OK.
+
+---
+
+## /test
+
+Roda apenas a suite de testes.
+
+```
+/test
+```
+
+**Equivalente a:**
+```bash
+jest --passWithNoTests
+```
+
+**Quando usar:** para verificar rapidamente se as mudanças quebraram algum teste existente.
+
+---
+
+## /pr-review
+
+**Invoca:** `@reviewer`
+
+Revisão advisory do diff atual — analisa o que mudou desde a última branch base.
+
+```
+/pr-review
+```
+
+**O que faz:**
+- Executa `git diff` contra a branch base
+- Passa o diff para `@reviewer` com contexto do projeto
+- Retorna findings em três níveis: Critical / Important / Minor
+
+**Resultado:** feedback de qualidade sem bloquear — você decide o que agir antes de abrir o PR.
+
+---
+
+## /status
+
+Exibe um resumo do `execution-state.md` atual.
+
+```
+/status
+```
+
+**Output:**
+```markdown
+## Status atual
+
+### ✅ Concluídas (3)
+- [x] Implementou rota POST /api/pagamentos
+- [x] Adicionou validação Zod
+- [x] Criou testes unitários
+
+### 🔄 Em progresso (1)
+- [ ] Testes de integração do webhook
+
+### 🚫 Bloqueadas (0)
+(nenhuma)
+```
+
+**Quando usar:** para retomar uma sessão de trabalho ou checar o estado antes de criar um PR.
+
+---
+
+## /unify
+
+**Invoca:** `@unify`
+
+Fecha o loop após implementação: reconcilia worktrees, documenta e cria o PR.
+
+```
+/unify
+```
+
+**Protocolo:**
+1. Verifica completude de cada task em `plan.md`
+2. Atualiza `docs/domain/INDEX.md` com novas entidades/padrões
+3. Merge de worktrees paralelas (se usadas no `/ulw-loop`)
+4. Cria PR via `gh pr create` com body gerado da spec
+5. Limpa estado: remove `.plan-ready`, arquiva `plan.md`, reseta `execution-state.md`
+
+**Diferença em relação ao `/handoff`:** `/handoff` documenta o estado para a próxima sessão; `/unify` finaliza a feature e cria o PR.
+
+---
+
 ## Tabela rápida
 
 | Comando | Agente | Quando usar |
@@ -206,3 +325,9 @@ Wave 3:
 | `/start-work` | — | Início de sessão focada |
 | `/handoff` | — | Fim de sessão longa |
 | `/ulw-loop` | @implementer × N | Múltiplas tasks independentes |
+| `/check` | — | Quality gates completos (tsc + eslint + jest) |
+| `/lint` | — | Apenas o linter |
+| `/test` | — | Apenas a suite de testes |
+| `/pr-review` | @reviewer | Revisão advisory do diff atual |
+| `/status` | — | Resumo do execution-state.md |
+| `/unify` | @unify | Fechar o loop: merge + PR |

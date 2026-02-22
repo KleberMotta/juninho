@@ -27,11 +27,11 @@ Output esperado:
 [juninho] Installing Agentic Coding Framework...
 [juninho] Target: /caminho/para/meu-projeto
 [juninho] ✓ Directories created
-[juninho] ✓ Agents created (7)
+[juninho] ✓ Agents created (9)
 [juninho] ✓ Skills created (5)
-[juninho] ✓ Plugins created (10)
+[juninho] ✓ Plugins created (11)
 [juninho] ✓ Tools created (4)
-[juninho] ✓ Commands created (7)
+[juninho] ✓ Commands created (13)
 [juninho] ✓ State files created
 [juninho] ✓ Docs scaffold created
 [juninho] ✓ opencode.json patched

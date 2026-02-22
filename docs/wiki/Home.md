@@ -12,9 +12,9 @@ Documentação completa do **Agentic Coding Framework** para OpenCode.
 |--------|----------|
 | [Getting Started](./getting-started.md) | Instalação, primeiro uso, teste local |
 | [Workflow](./workflow.md) | Casos de uso dia a dia — do bug ao PR |
-| [Agentes](./agents.md) | Referência completa dos 7 agentes |
-| [Plugins](./plugins.md) | Referência dos 10 plugins e seus hooks |
-| [Comandos](./commands.md) | Referência dos 7 slash commands |
+| [Agentes](./agents.md) | Referência completa dos 9 agentes |
+| [Plugins](./plugins.md) | Referência dos 11 plugins e seus hooks |
+| [Comandos](./commands.md) | Referência dos 13 slash commands |
 
 ---
 
@@ -29,11 +29,11 @@ juninho setup
 ```
 
 Depois disso, o OpenCode no seu projeto terá:
-- **7 agentes especializados** com protocolos definidos (planner, spec-writer, implementer, validator, reviewer, plan-reviewer, unify)
-- **10 plugins** que rodam automaticamente como hooks (env-protection, auto-format, carl-inject, skill-inject, hashline-read/edit, ...)
+- **9 agentes especializados** com protocolos definidos (planner, spec-writer, implementer, validator, reviewer, plan-reviewer, unify, explore, librarian)
+- **11 plugins** que rodam automaticamente como hooks (env-protection, auto-format, carl-inject, skill-inject, hashline-read/edit, directory-agents-injector, ...)
 - **5 skills** que injetam instruções por tipo de arquivo (tests, pages, API routes, actions, migrations)
 - **4 ferramentas** (lsp, ast-grep, find-pattern, next-version)
-- **7 slash commands** (/plan, /spec, /implement, /init-deep, /start-work, /handoff, /ulw-loop)
+- **13 slash commands** (/plan, /spec, /implement, /init-deep, /start-work, /handoff, /ulw-loop, /check, /lint, /test, /pr-review, /status, /unify)
 
 ---
 

@@ -203,6 +203,34 @@ Re-read the file to get current hashlines.
 
 ---
 
+## directory-agents-injector
+
+**Hook:** `session.start` / `tool.execute.before`
+
+Mecanismo **Tier 1 de contexto**: lê arquivos `AGENTS.md` em cada nível do diretório e injeta suas instruções hierarquicamente no contexto.
+
+**Como funciona:**
+
+```
+projeto/
+├── AGENTS.md              ← instruções globais (sempre injetadas)
+├── src/
+│   ├── AGENTS.md          ← instruções do módulo src/
+│   └── components/
+│       └── AGENTS.md      ← instruções específicas de components/
+```
+
+Quando o agente trabalha em `src/components/Button.tsx`, o plugin injeta:
+1. `AGENTS.md` da raiz (contexto global)
+2. `src/AGENTS.md` (contexto do módulo)
+3. `src/components/AGENTS.md` (contexto do sub-módulo)
+
+**Benefício:** diferentes partes do projeto podem ter convenções diferentes (ex: regras de estilo para componentes, padrões de rota para API) sem poluir o contexto global da sessão.
+
+**Integração com `/init-deep`:** o comando `/init-deep` gera `AGENTS.md` hierárquicos automaticamente ao escanear o codebase.
+
+---
+
 ## Customizando plugins
 
 Para modificar o comportamento de um plugin, edite diretamente o arquivo `.ts` em `.opencode/plugins/`. O OpenCode recarrega plugins automaticamente.
