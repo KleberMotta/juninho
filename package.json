@@ -1,8 +1,10 @@
 {
   "name": "@kleber.mottajr/juninho",
-  "version": "1.0.0-alpha.2",
+  "version": "1.0.0-alpha.3",
   "description": "Bootstrap the Agentic Coding Framework into any OpenCode project",
-  "bin": { "juninho": "dist/cli.js" },
+  "bin": {
+    "juninho": "dist/cli.js"
+  },
   "main": "dist/cli.js",
   "scripts": {
     "build": "tsc",
@@ -10,8 +12,15 @@
     "prepublishOnly": "npm run build",
     "validate": "tsx scripts/validate.ts"
   },
-  "files": ["dist"],
-  "keywords": ["opencode", "agents", "framework", "cli"],
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "opencode",
+    "agents",
+    "framework",
+    "cli"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/KleberMotta/juninho"
