@@ -12,7 +12,7 @@ Versionamento segue [Semantic Versioning](https://semver.org/lang/pt-BR/).
 ### Planejado para 1.0.0-beta.1
 - [ ] Suporte a `juninho update` para atualizar arquivos gerados mantendo customizações
 - [ ] Comando `juninho status` para mostrar o que está instalado e versões
-- [ ] Agente `@memory-manager` para gerenciar `persistent-context.md` ativamente
+- [ ] Agente `@j.memory-manager` para gerenciar `persistent-context.md` ativamente
 - [ ] Template de agente para projetos Python/FastAPI
 - [ ] Testes automatizados com Jest
 
@@ -36,16 +36,18 @@ Versionamento segue [Semantic Versioning](https://semver.org/lang/pt-BR/).
 - Idempotência via marker `.opencode/.juninho-installed`
 - Flag `--force` para reinstalação
 
-**Agentes instalados (7)**
-- `@planner` — protocolo Metis→Prometheus→Momus para planejamento goal-backward
-- `@plan-reviewer` — porta de qualidade com viés de aprovação
-- `@spec-writer` — entrevista de 5 fases (Discovery→Requirements→Contract→Data→Review)
-- `@implementer` — loop READ→ACT→COMMIT→VALIDATE com execução em waves
-- `@validator` — validação contra spec com tiers APPROVED/NOTE/FIX/BLOCK
-- `@reviewer` — revisor advisory read-only
-- `@unify` — reconciliação, atualização de docs, merge de worktrees, criação de PR
+**Agentes instalados (9)**
+- `@j.planner` — protocolo Metis→Prometheus→Momus para planejamento goal-backward
+- `@j.plan-reviewer` — porta de qualidade com viés de aprovação
+- `@j.spec-writer` — entrevista de 5 fases (Discovery→Requirements→Contract→Data→Review)
+- `@j.implementer` — loop READ→ACT→COMMIT→VALIDATE com execução em waves
+- `@j.validator` — validação contra spec com tiers APPROVED/NOTE/FIX/BLOCK
+- `@j.reviewer` — revisor advisory read-only
+- `@j.unify` — reconciliação, atualização de docs, merge de worktrees, criação de PR
+- `@j.explore` — agente de pesquisa do codebase, exploração paralela read-only
+- `@j.librarian` — agente de pesquisa externa via Context7 MCP
 
-**Plugins instalados (10)**
+**Plugins instalados (11)**
 - `env-protection` — bloqueia acesso a arquivos sensíveis
 - `auto-format` — formata arquivos após Write/Edit (prettier, black, gofmt, rustfmt)
 - `plan-autoload` — injeta plano ativo quando sessão fica idle
@@ -70,25 +72,31 @@ Versionamento segue [Semantic Versioning](https://semver.org/lang/pt-BR/).
 - `lsp_*` — 6 ferramentas LSP (diagnostics, goto-definition, references, symbols, rename)
 - `ast_grep_search` / `ast_grep_replace` — busca e substituição estrutural por AST
 
-**Slash commands (7)**
-- `/plan` — invoca @planner
-- `/spec` — invoca @spec-writer
-- `/implement` — invoca @implementer
+**Slash commands (13)**
+- `/plan` — invoca @j.planner
+- `/spec` — invoca @j.spec-writer
+- `/implement` — invoca @j.implementer
 - `/init-deep` — exploração profunda do codebase para popular docs de domínio
 - `/start-work` — inicializa contexto de sessão focada
 - `/handoff` — prepara documentação de handoff fim de sessão
 - `/ulw-loop` — modo ultra work, máximo paralelismo
+- `/check` — quality gates completos (tsc + eslint + jest)
+- `/lint` — apenas o linter
+- `/test` — apenas a suite de testes
+- `/pr-review` — invoca @j.reviewer para revisão advisory
+- `/status` — resumo do execution-state.md
+- `/unify` — invoca @j.unify para fechar o loop
 
 **Docs scaffold**
 - `AGENTS.md` — referência rápida na raiz do projeto
 - `docs/domain/INDEX.md` — template de índice de domínio para CARL
 - `docs/principles/manifest` — lookup table de keywords para CARL
-- `docs/specs/` — diretório para specs geradas por @spec-writer
+- `docs/specs/` — diretório para specs geradas por @j.spec-writer
 - `worktrees/` — diretório para paralelização com git worktrees
 
 **opencode.json patching**
 - Merge inteligente: configuração existente do usuário tem prioridade
-- Registra os 7 agentes com modelo, modo e permissões
+- Registra os 9 agentes com modelo, modo e permissões
 - Adiciona MCP Context7 (`@upstash/context7-mcp@latest`)
 
 **GitHub infra (no repositório do juninho)**

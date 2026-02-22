@@ -29,7 +29,7 @@ juninho setup
 ```
 
 Depois disso, o OpenCode no seu projeto terá:
-- **9 agentes especializados** com protocolos definidos (planner, spec-writer, implementer, validator, reviewer, plan-reviewer, unify, explore, librarian)
+- **9 agentes especializados** com protocolos definidos (j.planner, j.spec-writer, j.implementer, j.validator, j.reviewer, j.plan-reviewer, j.unify, j.explore, j.librarian)
 - **11 plugins** que rodam automaticamente como hooks (env-protection, auto-format, carl-inject, skill-inject, hashline-read/edit, directory-agents-injector, ...)
 - **5 skills** que injetam instruções por tipo de arquivo (tests, pages, API routes, actions, migrations)
 - **4 ferramentas** (lsp, ast-grep, find-pattern, next-version)
@@ -41,7 +41,7 @@ Depois disso, o OpenCode no seu projeto terá:
 
 ```
 /plan objetivo    →  plan.md aprovado
-/implement        →  wave 1 → wave 2 → wave 3 → @validator → @unify → PR
+/implement        →  wave 1 → wave 2 → wave 3 → @j.validator → @j.unify → PR
 ```
 
 Para features complexas:

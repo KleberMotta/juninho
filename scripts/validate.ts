@@ -59,8 +59,8 @@ const readCmd = (n: string) => readFileSync(cmdPath(n), "utf-8")
 // ─── Known Lists ──────────────────────────────────────────────────────────────
 
 const AGENTS = [
-  "planner", "plan-reviewer", "spec-writer", "implementer",
-  "validator", "reviewer", "unify", "explore", "librarian",
+  "j.planner", "j.plan-reviewer", "j.spec-writer", "j.implementer",
+  "j.validator", "j.reviewer", "j.unify", "j.explore", "j.librarian",
 ]
 
 const PLUGINS = [
@@ -399,51 +399,51 @@ test("Plugin Logic", "todo-enforcer: returns early when no incomplete items", ()
 
 const cfg = JSON.parse(readFileSync(path.join(testDir, "opencode.json"), "utf-8"))
 
-test("Agent Config", "planner: model=anthropic/claude-opus-4-6", () =>
-  cfg.agent?.planner?.model === "anthropic/claude-opus-4-6"
+test("Agent Config", "j.planner: model=anthropic/claude-opus-4-6", () =>
+  cfg.agent?.["j.planner"]?.model === "anthropic/claude-opus-4-6"
     ? true
-    : `Expected anthropic/claude-opus-4-6, got: ${cfg.agent?.planner?.model}`)
+    : `Expected anthropic/claude-opus-4-6, got: ${cfg.agent?.["j.planner"]?.model}`)
 
-test("Agent Config", "planner: task+bash+write allowed, edit denied", () => {
-  const p = cfg.agent?.planner?.permission
+test("Agent Config", "j.planner: task+bash+write allowed, edit denied", () => {
+  const p = cfg.agent?.["j.planner"]?.permission
   return p?.task === "allow" && p?.bash === "allow" && p?.write === "allow" && p?.edit === "deny"
     ? true
-    : `planner permissions mismatch: ${JSON.stringify(p)}`
+    : `j.planner permissions mismatch: ${JSON.stringify(p)}`
 })
 
-test("Agent Config", "plan-reviewer: task+bash+write+edit all denied", () => {
-  const p = cfg.agent?.["plan-reviewer"]?.permission
+test("Agent Config", "j.plan-reviewer: task+bash+write+edit all denied", () => {
+  const p = cfg.agent?.["j.plan-reviewer"]?.permission
   return p?.task === "deny" && p?.bash === "deny" && p?.write === "deny" && p?.edit === "deny"
     ? true
-    : `plan-reviewer permissions mismatch: ${JSON.stringify(p)}`
+    : `j.plan-reviewer permissions mismatch: ${JSON.stringify(p)}`
 })
 
-test("Agent Config", "explore: model includes haiku", () =>
-  cfg.agent?.explore?.model?.includes("haiku")
+test("Agent Config", "j.explore: model includes haiku", () =>
+  cfg.agent?.["j.explore"]?.model?.includes("haiku")
     ? true
-    : `Expected haiku model, got: ${cfg.agent?.explore?.model}`)
+    : `Expected haiku model, got: ${cfg.agent?.["j.explore"]?.model}`)
 
-test("Agent Config", "librarian: model includes haiku", () =>
-  cfg.agent?.librarian?.model?.includes("haiku")
+test("Agent Config", "j.librarian: model includes haiku", () =>
+  cfg.agent?.["j.librarian"]?.model?.includes("haiku")
     ? true
-    : `Expected haiku model, got: ${cfg.agent?.librarian?.model}`)
+    : `Expected haiku model, got: ${cfg.agent?.["j.librarian"]?.model}`)
 
-test("Agent Config", "reviewer: bash+edit+write+task all denied", () => {
-  const p = cfg.agent?.reviewer?.permission
+test("Agent Config", "j.reviewer: bash+edit+write+task all denied", () => {
+  const p = cfg.agent?.["j.reviewer"]?.permission
   return p?.bash === "deny" && p?.edit === "deny" && p?.write === "deny" && p?.task === "deny"
     ? true
-    : `reviewer permissions mismatch: ${JSON.stringify(p)}`
+    : `j.reviewer permissions mismatch: ${JSON.stringify(p)}`
 })
 
-test("Agent Config", "validator: task denied", () =>
-  cfg.agent?.validator?.permission?.task === "deny"
+test("Agent Config", "j.validator: task denied", () =>
+  cfg.agent?.["j.validator"]?.permission?.task === "deny"
     ? true
-    : `validator.permission.task should be deny, got: ${cfg.agent?.validator?.permission?.task}`)
+    : `j.validator.permission.task should be deny, got: ${cfg.agent?.["j.validator"]?.permission?.task}`)
 
-test("Agent Config", "unify: task allowed", () =>
-  cfg.agent?.unify?.permission?.task === "allow"
+test("Agent Config", "j.unify: task allowed", () =>
+  cfg.agent?.["j.unify"]?.permission?.task === "allow"
     ? true
-    : `unify.permission.task should be allow, got: ${cfg.agent?.unify?.permission?.task}`)
+    : `j.unify.permission.task should be allow, got: ${cfg.agent?.["j.unify"]?.permission?.task}`)
 
 test("Agent Config", "Context7 MCP configured with npx command", () =>
   cfg.mcp?.context7?.command === "npx"
@@ -501,20 +501,20 @@ test("Skills", "test-writing: Playwright MCP commented in frontmatter", () =>
 
 // ─── Group 7: Commands (13 tests) ────────────────────────────────────────────
 
-test("Commands", "plan.md references @planner", () =>
-  readCmd("plan").includes("@planner"))
+test("Commands", "plan.md references @j.planner", () =>
+  readCmd("plan").includes("@j.planner"))
 
-test("Commands", "spec.md references @spec-writer", () =>
-  readCmd("spec").includes("@spec-writer"))
+test("Commands", "spec.md references @j.spec-writer", () =>
+  readCmd("spec").includes("@j.spec-writer"))
 
-test("Commands", "implement.md references @implementer", () =>
-  readCmd("implement").includes("@implementer"))
+test("Commands", "implement.md references @j.implementer", () =>
+  readCmd("implement").includes("@j.implementer"))
 
-test("Commands", "unify.md references @unify", () =>
-  readCmd("unify").includes("@unify"))
+test("Commands", "unify.md references @j.unify", () =>
+  readCmd("unify").includes("@j.unify"))
 
-test("Commands", "pr-review.md references @reviewer", () =>
-  readCmd("pr-review").includes("@reviewer"))
+test("Commands", "pr-review.md references @j.reviewer", () =>
+  readCmd("pr-review").includes("@j.reviewer"))
 
 test("Commands", "check.md references pre-commit", () =>
   readCmd("check").includes("pre-commit"))
@@ -537,8 +537,8 @@ test("Commands", "start-work.md references execution-state.md", () =>
 test("Commands", "handoff.md references execution-state.md", () =>
   readCmd("handoff").includes("execution-state.md"))
 
-test("Commands", "ulw-loop.md references @implementer", () =>
-  readCmd("ulw-loop").includes("@implementer"))
+test("Commands", "ulw-loop.md references @j.implementer", () =>
+  readCmd("ulw-loop").includes("@j.implementer"))
 
 // ─── Group 8: Docs/Config (8 tests) ──────────────────────────────────────────
 

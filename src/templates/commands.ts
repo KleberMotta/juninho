@@ -23,7 +23,7 @@ export function writeCommands(projectDir: string): void {
 
 const PLAN = `# /plan — Strategic Planning
 
-Invoke the \`@planner\` agent to create an actionable plan from a goal.
+Invoke the \`@j.planner\` agent to create an actionable plan from a goal.
 
 ## Usage
 
@@ -41,12 +41,23 @@ Invoke the \`@planner\` agent to create an actionable plan from a goal.
 
 ## What happens
 
-1. \`@planner\` classifies your intent
+1. \`@j.planner\` classifies your intent
 2. Explores the codebase for context
 3. Interviews you (proportional to complexity)
 4. Writes \`plan.md\` and \`CONTEXT.md\`
-5. Spawns \`@plan-reviewer\` for quality check
+5. Spawns \`@j.plan-reviewer\` for quality check
 6. Marks plan as ready for \`/implement\`
+
+## Delegation Rule (MANDATORY)
+
+You MUST delegate this task to \`@j.planner\` using the \`task()\` tool.
+Do NOT perform the planning yourself — you are the orchestrator, not the executor.
+
+When ANY sub-agent returns output:
+- NEVER dismiss it as "incomplete" or "the agent didn't do what was asked"
+- NEVER say "I'll continue myself" and take over the sub-agent's job
+- Sub-agent unknowns/ambiguities are VALUABLE DATA — forward them to the user via \`question\` tool
+- If the sub-agent's report has gaps, pass those gaps to the user as questions — do NOT fill them yourself
 
 ## After planning
 
@@ -57,7 +68,7 @@ Run \`/implement\` to execute the plan, or \`/spec\` first for complex features.
 
 const SPEC = `# /spec — Feature Specification
 
-Invoke the \`@spec-writer\` agent to create a detailed spec before implementation.
+Invoke the \`@j.spec-writer\` agent to create a detailed spec before implementation.
 
 ## Usage
 
@@ -75,14 +86,27 @@ Invoke the \`@spec-writer\` agent to create a detailed spec before implementatio
 
 ## What happens
 
-1. \`@spec-writer\` runs a 5-phase interview:
+1. \`@j.spec-writer\` spawns \`@j.explore\` for codebase pre-research
+2. Uses explore findings to inform a 5-phase interview:
    - Discovery: problem and users
    - Requirements: functional and non-functional
    - Contract: API and interface definitions
    - Data: schema and migration strategy
    - Review: verify completeness
+3. Writes spec to \`docs/specs/{feature-name}.md\`
 
-2. Writes spec to \`docs/specs/{feature-name}.md\`
+The session does NOT need to call \`@j.explore\` separately — \`@j.spec-writer\` handles its own research internally.
+
+## Delegation Rule (MANDATORY)
+
+You MUST delegate this task to \`@j.spec-writer\` using the \`task()\` tool.
+Do NOT perform the spec writing yourself — you are the orchestrator, not the executor.
+
+When ANY sub-agent returns output:
+- NEVER dismiss it as "incomplete" or "the agent didn't do what was asked"
+- NEVER say "I'll continue myself" and take over the sub-agent's job
+- Sub-agent unknowns/ambiguities are VALUABLE DATA — forward them to the user via \`question\` tool
+- If the sub-agent's report has gaps, pass those gaps to the user as questions — do NOT fill them yourself
 
 ## After spec
 
@@ -93,7 +117,7 @@ Run \`/plan\` to create an execution plan, then \`/implement\` to build.
 
 const IMPLEMENT = `# /implement — Execute Plan or Spec
 
-Invoke the \`@implementer\` agent to build what was planned or specified.
+Invoke the \`@j.implementer\` agent to build what was planned or specified.
 
 ## Usage
 
@@ -112,18 +136,29 @@ Invoke the \`@implementer\` agent to build what was planned or specified.
 
 ## What happens
 
-1. \`@implementer\` reads the active \`plan.md\` (auto-loaded by plan-autoload plugin)
+1. \`@j.implementer\` reads the active \`plan.md\` (auto-loaded by plan-autoload plugin)
 2. Or reads the specified spec file
 3. Executes in waves:
    - Wave 1: Foundation (schema, types, migrations)
    - Wave 2: Core logic (services, API routes)
    - Wave 3: Integration (wire-up, tests)
 4. Validates after each wave
-5. Spawns \`@validator\` for spec compliance
+5. Spawns \`@j.validator\` for spec compliance
+
+## Delegation Rule (MANDATORY)
+
+You MUST delegate this task to \`@j.implementer\` using the \`task()\` tool.
+Do NOT implement code yourself — you are the orchestrator, not the executor.
+
+When ANY sub-agent returns output:
+- NEVER dismiss it as "incomplete" or "the agent didn't do what was asked"
+- NEVER say "I'll continue myself" and take over the sub-agent's job
+- Sub-agent unknowns/ambiguities are VALUABLE DATA — forward them to the user via \`question\` tool
+- If the sub-agent's report has gaps, pass those gaps to the user as questions — do NOT fill them yourself
 
 ## After implementation
 
-Run \`/implement\` again if waves are incomplete, or \`@unify\` to merge and create PR.
+Run \`/implement\` again if waves are incomplete, or \`@j.unify\` to merge and create PR.
 `
 
 // ─── /init-deep ───────────────────────────────────────────────────────────────
@@ -218,7 +253,7 @@ Initialize context for a focused work session on a specific task.
 
 ## After starting work
 
-The session is now focused. Use \`/implement\` to build, \`@validator\` to check, \`/handoff\` when done.
+The session is now focused. Use \`/implement\` to build, \`@j.validator\` to check, \`/handoff\` when done.
 `
 
 // ─── /handoff ─────────────────────────────────────────────────────────────────
@@ -288,12 +323,12 @@ Activate maximum parallelism mode — work until all tasks in execution-state.md
 
 1. Reads \`execution-state.md\` for task list
 2. Identifies tasks that can run in parallel (no dependencies)
-3. Spins up multiple \`@implementer\` agents in parallel via worktrees:
+3. Spins up multiple \`@j.implementer\` agents in parallel via worktrees:
    - Each worktree works on independent files
    - No merge conflicts by design
-4. \`@validator\` runs after each wave
+4. \`@j.validator\` runs after each wave
 5. Loop continues until all tasks are marked complete
-6. \`@unify\` merges worktrees and creates PR
+6. \`@j.unify\` merges worktrees and creates PR
 
 ## When to use
 
@@ -413,7 +448,7 @@ Run the test suite only.
 
 const PR_REVIEW = `# /pr-review — Advisory PR Review
 
-Launch the \`@reviewer\` agent to perform an advisory code review on the current branch diff.
+Launch the \`@j.reviewer\` agent to perform an advisory code review on the current branch diff.
 
 ## Usage
 
@@ -423,7 +458,7 @@ Launch the \`@reviewer\` agent to perform an advisory code review on the current
 
 ## What happens
 
-1. \`@reviewer\` reads all files changed in the current branch (vs main)
+1. \`@j.reviewer\` reads all files changed in the current branch (vs main)
 2. Reviews for: logic correctness, clarity, security, performance, maintainability
 3. Returns a structured report: Critical / Important / Minor / Positive Notes
 4. Report is **advisory only** — does not block any merge or pipeline step
@@ -434,9 +469,9 @@ Launch the \`@reviewer\` agent to perform an advisory code review on the current
 - When you want a second opinion on the implementation quality
 - For pre-merge quality assurance
 
-## Distinction from @validator
+## Distinction from @j.validator
 
-| \`@reviewer\` | \`@validator\` |
+| \`@j.reviewer\` | \`@j.validator\` |
 |---|---|
 | Post-PR, advisory | During implementation loop |
 | "Is this good code?" | "Does this satisfy the spec?" |
@@ -480,7 +515,7 @@ No agent needed — this is a direct state file read.
 
 const UNIFY_CMD = `# /unify — Close the Loop
 
-Invoke the \`@unify\` agent to reconcile plan vs delivery, update domain docs, merge worktrees, and create the PR.
+Invoke the \`@j.unify\` agent to reconcile plan vs delivery, update domain docs, merge worktrees, and create the PR.
 
 ## Usage
 
@@ -500,7 +535,7 @@ Invoke the \`@unify\` agent to reconcile plan vs delivery, update domain docs, m
 
 ## When to use
 
-After \`@implementer\` signals all tasks complete and \`@validator\` has approved.
+After \`@j.implementer\` signals all tasks complete and \`@j.validator\` has approved.
 
 ## Prerequisites
 

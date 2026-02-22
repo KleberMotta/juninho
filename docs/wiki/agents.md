@@ -6,9 +6,9 @@ O juninho instala 9 agentes especializados em `.opencode/agents/`. Cada agente �
 
 No OpenCode, mencione com `@`:
 ```
-@planner adicione sistema de pagamentos
-@validator
-@reviewer
+@j.planner adicione sistema de pagamentos
+@j.validator
+@j.reviewer
 ```
 
 Ou via slash commands (que invocam os agentes internamente):
@@ -20,7 +20,7 @@ Ou via slash commands (que invocam os agentes internamente):
 
 ---
 
-## @planner
+## @j.planner
 
 **Modelo:** claude-opus-4-6 | **Modo:** subagent
 
@@ -43,7 +43,7 @@ O agente estratégico central. Transforma objetivos vagos em planos executáveis
 - Escreve `plan.md` + `CONTEXT.md`
 
 **Fase 3 — Momus (Loop de revisão)**
-- Spawna `@plan-reviewer`
+- Spawna `@j.plan-reviewer`
 - Itera até aprovação (OKAY)
 - Marca `.opencode/state/.plan-ready` para o plugin `plan-autoload`
 
@@ -53,7 +53,7 @@ O agente estratégico central. Transforma objetivos vagos em planos executáveis
 
 ---
 
-## @plan-reviewer
+## @j.plan-reviewer
 
 **Modelo:** claude-sonnet-4-6 | **Modo:** subagent | **Permissões:** task: deny, bash: deny
 
@@ -72,7 +72,7 @@ Porta de qualidade para planos. **Viés de aprovação** — rejeita apenas prob
 
 ---
 
-## @spec-writer
+## @j.spec-writer
 
 **Modelo:** claude-opus-4-6 | **Modo:** subagent | **Write access:** `docs/specs/**`
 
@@ -98,7 +98,7 @@ Spec em `docs/specs/{feature-name}.md` com:
 
 ---
 
-## @implementer
+## @j.implementer
 
 **Modelo:** claude-sonnet-4-6 | **Modo:** subagent
 
@@ -110,7 +110,7 @@ Executa planos e specs com o loop **READ→ACT→COMMIT→VALIDATE**.
 READ   → lê spec + plan + TODOS os arquivos que vai modificar
 ACT    → implementa seguindo padrões existentes do codebase
 COMMIT → commit claro descrevendo o que mudou e por quê
-VALIDATE → TypeScript + testes + spawn @validator se spec existe
+VALIDATE → TypeScript + testes + spawn @j.validator se spec existe
 ```
 
 ### Execução em waves
@@ -128,7 +128,7 @@ Usa referências `NN#XX:` para edições estáveis. Se o plugin `hashline-edit` 
 
 ---
 
-## @validator
+## @j.validator
 
 **Modelo:** claude-sonnet-4-6 | **Modo:** subagent
 
@@ -150,7 +150,7 @@ Garante que implementações atendam suas especificações. **Lê a spec antes d
 
 ---
 
-## @reviewer
+## @j.reviewer
 
 **Modelo:** claude-sonnet-4-6 | **Modo:** subagent | **Permissões:** bash: deny, edit: deny, write: deny
 
@@ -173,7 +173,7 @@ Sempre inclui notas positivas. Veredicto: `LGTM | LGTM_WITH_NOTES | NEEDS_WORK`.
 
 ---
 
-## @unify
+## @j.unify
 
 **Modelo:** claude-sonnet-4-6 | **Modo:** subagent
 
@@ -189,7 +189,7 @@ Fecha o loop após implementação: reconcilia, documenta e faz o ship.
 
 ---
 
-## @explore
+## @j.explore
 
 **Modelo:** claude-haiku-4-6 | **Modo:** subagent | **Permissões:** write: deny, bash: deny
 
@@ -197,14 +197,14 @@ Agente de pesquisa do codebase. Faz exploração paralela de arquivos, símbolos
 
 ### Quando é spawnado
 
-Pelo `@planner` na **Fase 1 (Metis)** para exploração paralela do codebase antes do planejamento.
+Pelo `@j.planner` na **Fase 1 (Metis)** para exploração paralela do codebase antes do planejamento.
 
 ### Responsabilidades
 
 - Mapeamento de arquivos relevantes para o objetivo
 - Identificação de padrões e convenções existentes no projeto
 - Listagem de dependências e entidades envolvidas
-- Retorna contexto estruturado para o `@planner`
+- Retorna contexto estruturado para o `@j.planner`
 
 ### Permissões
 
@@ -212,7 +212,7 @@ Sem escrita, sem bash destrutivo — apenas leitura e busca.
 
 ---
 
-## @librarian
+## @j.librarian
 
 **Modelo:** claude-haiku-4-6 | **Modo:** subagent | **Permissões:** write: deny
 
@@ -220,7 +220,7 @@ Agente de pesquisa externa de documentação e OSS. Usa o **Context7 MCP** para 
 
 ### Quando é spawnado
 
-Pelo `@planner` na **Fase 1 (Metis)** para contextualizar dependências externas antes do planejamento.
+Pelo `@j.planner` na **Fase 1 (Metis)** para contextualizar dependências externas antes do planejamento.
 
 ### Responsabilidades
 
@@ -237,18 +237,18 @@ Read-only — sem escrita no codebase.
 ## Modelo mental: quando usar cada agente
 
 ```
-Objetivo vago → /plan (@planner)
+Objetivo vago → /plan (@j.planner)
                     ↓
               Fase 1 (Metis): exploração paralela
-              @explore (codebase) + @librarian (docs externos)
+              @j.explore (codebase) + @j.librarian (docs externos)
                     ↓
-Feature complexa → /spec (@spec-writer) → /plan → /implement
+Feature complexa → /spec (@j.spec-writer) → /plan → /implement
                                                        ↓
-                                               @implementer executa
+                                               @j.implementer executa
                                                        ↓
-                                               @validator verifica
+                                               @j.validator verifica
                                                        ↓
-                                               @reviewer (advisory)
+                                               @j.reviewer (advisory)
                                                        ↓
-                                               @unify → PR
+                                               @j.unify → PR
 ```

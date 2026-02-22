@@ -70,8 +70,8 @@ The todo-enforcer plugin reads this file to prevent drift.
 
 ## Task List
 
-<!-- Tasks are added by /plan and checked off by @implementer -->
-<!-- Format: - [ ] task description (agent: @agentname) -->
+<!-- Tasks are added by /plan and checked off by @j.implementer -->
+<!-- Format: - [ ] task description (agent: @j.agentname) -->
 
 ## In Progress
 
@@ -101,8 +101,8 @@ The todo-enforcer plugin reads this file to prevent drift.
 
 const VALIDATOR_WORK = `# Validator Work Log
 
-Per-agent scratch space and audit trail for the \`@validator\` agent.
-Written by @validator during each validation pass. Read by UNIFY to understand what was deferred.
+Per-agent scratch space and audit trail for the \`@j.validator\` agent.
+Written by @j.validator during each validation pass. Read by UNIFY to understand what was deferred.
 
 ## Current Validation Pass
 
@@ -124,7 +124,7 @@ Accepted concerns that don't block approval — review in next iteration:
 
 ## Fixes Applied Directly (FIX tier)
 
-Changes made by @validator to resolve FIX-tier issues:
+Changes made by @j.validator to resolve FIX-tier issues:
 
 - (none)
 
@@ -147,7 +147,7 @@ Must be resolved before approval can be granted:
 
 const IMPLEMENTER_WORK = `# Implementer Work Log
 
-Per-agent scratch space for the \`@implementer\` agent.
+Per-agent scratch space for the \`@j.implementer\` agent.
 Tracks in-progress decisions, blockers, and deviations from the plan.
 
 ## Current Task
@@ -177,5 +177,5 @@ Track which files were changed in this session:
 
 ---
 
-*Updated by @implementer. Reset by UNIFY at end of each feature cycle.*
+*Updated by @j.implementer. Reset by UNIFY at end of each feature cycle.*
 `

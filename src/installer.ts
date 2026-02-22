@@ -68,7 +68,7 @@ export async function runSetup(projectDir: string, options: SetupOptions = {}): 
   console.log("")
   console.log("[juninho] ✓ Framework installed successfully!")
   console.log("[juninho] Open OpenCode — /plan, /spec and /implement are ready.")
-  console.log("[juninho] Agents: @planner, @spec-writer, @implementer, @validator, @reviewer, @unify, @explore, @librarian")
+  console.log("[juninho] Agents: @j.planner, @j.spec-writer, @j.implementer, @j.validator, @j.reviewer, @j.unify, @j.explore, @j.librarian")
 }
 
 function writePreCommitHook(projectDir: string): void {

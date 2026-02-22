@@ -21,65 +21,6 @@ export function patchOpencodeJson(projectDir: string): void {
   }
 
   const frameworkConfig = {
-    agent: {
-      // ── Planning pipeline ──────────────────────────────────────────────────
-      planner: {
-        description: "Three-phase planning pipeline (Metis→Prometheus→Momus). Spawns explore+librarian in Phase 1, interviews developer, delivers approved plan.md.",
-        mode: "subagent",
-        model: "anthropic/claude-opus-4-6",
-        permission: { write: "allow", bash: "allow", task: "allow", edit: "deny", question: "allow" },
-      },
-      "plan-reviewer": {
-        description: "Executability gate for plans. Approval bias — rejects only blockers. Max 3 issues. Internal to planner.",
-        mode: "subagent",
-        model: "anthropic/claude-sonnet-4-6",
-        permission: { task: "deny", write: "deny", edit: "deny", bash: "deny" },
-      },
-      // ── Execution pipeline ────────────────────────────────────────────────
-      "spec-writer": {
-        description: "Produces structured specifications through 5-phase interview. Writes to docs/specs/{slug}/spec.md.",
-        mode: "subagent",
-        model: "anthropic/claude-opus-4-6",
-        permission: { bash: "deny", task: "deny" },
-      },
-      implementer: {
-        description: "Executes plans wave by wave using git worktrees. READ→ACT→COMMIT→VALIDATE loop per task.",
-        mode: "subagent",
-        model: "anthropic/claude-sonnet-4-6",
-        permission: { task: "allow" },
-      },
-      validator: {
-        description: "Semantic validation judge — reads spec before code. BLOCK/FIX/NOTE/APPROVED. Can fix FIX-tier issues directly.",
-        mode: "subagent",
-        model: "anthropic/claude-sonnet-4-6",
-        permission: { task: "deny" },
-      },
-      reviewer: {
-        description: "Advisory code reviewer — post-PR, read-only, never blocks the pipeline.",
-        mode: "subagent",
-        model: "anthropic/claude-sonnet-4-6",
-        permission: { bash: "deny", edit: "deny", write: "deny", task: "deny" },
-      },
-      unify: {
-        description: "Closes the loop — reconciles plan vs delivery, updates domain docs, merges worktrees, creates PR.",
-        mode: "subagent",
-        model: "anthropic/claude-sonnet-4-6",
-        permission: { task: "allow" },
-      },
-      // ── Research agents (spawned on-demand by planner) ────────────────────
-      explore: {
-        description: "Fast codebase research — file mapping, pattern grep, dependency tracing. Read-only, no delegation.",
-        mode: "subagent",
-        model: "anthropic/claude-haiku-4-5",
-        permission: { bash: "deny", write: "deny", edit: "deny", task: "deny" },
-      },
-      librarian: {
-        description: "External documentation and OSS research — official docs, package APIs, canonical patterns. Read-only.",
-        mode: "subagent",
-        model: "anthropic/claude-haiku-4-5",
-        permission: { bash: "deny", write: "deny", edit: "deny", task: "deny" },
-      },
-    },
     mcp: {
       // Context7 is global — available to all agents for live library documentation.
       // Low context cost, high utility across implementer, planner, and validator.
@@ -139,13 +80,13 @@ This project uses the **Agentic Coding Framework** v2.1 — installed by [juninh
 \`\`\`
 /spec → docs/specs/{slug}/spec.md (approved)
   → /plan → docs/specs/{slug}/plan.md (approved)
-  → /implement → @validator gates each commit → /unify → PR
+  → /implement → @j.validator gates each commit → /unify → PR
 \`\`\`
 
 **Path B — Plan-driven (lightweight tasks):**
 \`\`\`
 /plan → plan.md (approved) → plan-autoload injects on next session
-  → /implement → @validator gates each commit → /unify → PR
+  → /implement → @j.validator gates each commit → /unify → PR
 \`\`\`
 
 ## Commands
@@ -168,38 +109,38 @@ This project uses the **Agentic Coding Framework** v2.1 — installed by [juninh
 
 ## Agent Roster
 
-### @planner
+### @j.planner
 Three-phase pipeline orchestrated internally:
-- **Phase 1 (Metis)**: Spawns \`@explore\` + \`@librarian\` in parallel, classifies intent
+- **Phase 1 (Metis)**: Spawns \`@j.explore\` + \`@j.librarian\` in parallel, classifies intent
 - **Phase 2 (Prometheus)**: Interviews developer (proportional to complexity), writes \`CONTEXT.md\` + \`plan.md\`
-- **Phase 3 (Momus)**: Loops with \`@plan-reviewer\` until OKAY
+- **Phase 3 (Momus)**: Loops with \`@j.plan-reviewer\` until OKAY
 
-### @plan-reviewer
+### @j.plan-reviewer
 Internal to planner. Executability gate — approval bias, max 3 issues.
 
-### @spec-writer
+### @j.spec-writer
 5-phase interview: Discovery → Requirements → Contract → Data → Review.
 Writes to \`docs/specs/{feature-slug}/spec.md\`.
 
-### @implementer
+### @j.implementer
 READ→ACT→COMMIT→VALIDATE loop. Wave-based with git worktrees for parallel tasks.
 Pre-commit hook gates every commit. Hashline-aware editing.
 
-### @validator
+### @j.validator
 Reads spec BEFORE code. BLOCK / FIX / NOTE / APPROVED.
 Can fix FIX-tier issues directly. Writes audit trail to \`validator-work.md\`.
 
-### @reviewer
+### @j.reviewer
 Post-PR advisory review. Read-only, never blocks. Use via \`/pr-review\`.
 
-### @unify
+### @j.unify
 Closes the loop: reconcile, update domain docs, merge worktrees, \`gh pr create\`.
 
-### @explore
+### @j.explore
 Fast read-only codebase research. Spawned by planner Phase 1.
 Maps files, patterns, and constraints before the developer interview.
 
-### @librarian
+### @j.librarian
 External docs and OSS research. Spawned by planner Phase 1.
 Fetches official API docs via Context7 MCP.
 
@@ -281,7 +222,7 @@ Global index of business domain documentation.
 
 Serves two purposes:
 1. **CARL lookup table** — \`carl-inject.ts\` reads \`Keywords:\` lines to match prompt words and inject the listed \`Files:\`
-2. **Planner orientation** — \`@planner\` reads this before interviewing to know what domain knowledge exists
+2. **Planner orientation** — \`@j.planner\` reads this before interviewing to know what domain knowledge exists
 
 Run \`/init-deep\` to auto-populate from the codebase.
 Update manually as you document business domains.

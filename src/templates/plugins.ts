@@ -364,9 +364,9 @@ export default (async ({ directory: _directory }: { directory: string }) => ({
       type: "text",
       text:
         \`[intent-gate] Detected intent: \${intent}\\n\` +
-        \`Routing guide: RESOLVE_PROBLEM → @implementer, REFACTOR → @implementer, \` +
-        \`ADD_FEATURE → @planner then @implementer, RESEARCH → inline, \` +
-        \`MIGRATION → @planner then @implementer, REVIEW → @reviewer\`,
+        \`Routing guide: RESOLVE_PROBLEM → @j.implementer, REFACTOR → @j.implementer, \` +
+        \`ADD_FEATURE → @j.planner then @j.implementer, RESEARCH → inline, \` +
+        \`MIGRATION → @j.planner then @j.implementer, REVIEW → @j.reviewer\`,
     })
   },
 })) satisfies Plugin

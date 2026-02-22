@@ -48,7 +48,7 @@ Abra o OpenCode no projeto e experimente:
 /plan adicionar autenticação com email e OAuth Google
 ```
 
-O agente `@planner` vai:
+O agente `@j.planner` vai:
 1. Classificar a intent como FEATURE
 2. Explorar o codebase atual
 3. Fazer perguntas proporcionais à complexidade
@@ -59,7 +59,7 @@ Depois:
 /implement
 ```
 
-O `@implementer` executa o plano wave por wave, validando a cada etapa.
+O `@j.implementer` executa o plano wave por wave, validando a cada etapa.
 
 ## Testando localmente (sem publicar no npm)
 
@@ -85,7 +85,7 @@ Após o setup, seu projeto terá:
 
 ```
 .opencode/
-├── agents/          ← @planner, @implementer, @validator, etc.
+├── agents/          ← @j.planner, @j.implementer, @j.validator, etc.
 ├── skills/          ← instruções por tipo de arquivo
 ├── plugins/         ← hooks automáticos (auto-descobertos pelo OpenCode)
 ├── tools/           ← lsp, ast-grep, find-pattern, next-version

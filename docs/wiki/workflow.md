@@ -7,7 +7,7 @@ Este guia mostra como usar o juninho framework no dia a dia — do objetivo ao P
 ## Fluxo padrão
 
 ```
-Objetivo → /plan → (opcional: /spec) → /implement → @validator → @unify → PR
+Objetivo → /plan → (opcional: /spec) → /implement → @j.validator → @j.unify → PR
 ```
 
 ---
@@ -20,14 +20,14 @@ Situação: "a rota /api/clientes retorna 500 quando o ID não existe"
 
 ```
 # Direto para o implementer — sem planejamento necessário
-@implementer fix the 500 error on /api/clientes when ID doesn't exist
+@j.implementer fix the 500 error on /api/clientes when ID doesn't exist
 
 # Ou com contexto mínimo via plan
 /plan fix 500 error on GET /api/clientes/:id when record not found
 ```
 
-O `@planner` vai classificar como `BUG`, fazer 1–2 perguntas, escrever um `plan.md` pequeno,
-e o `@implementer` vai corrigir diretamente.
+O `@j.planner` vai classificar como `BUG`, fazer 1–2 perguntas, escrever um `plan.md` pequeno,
+e o `@j.implementer` vai corrigir diretamente.
 
 ---
 
@@ -41,7 +41,7 @@ Situação: "adicionar filtro por data nos agendamentos"
 /plan adicionar filtro por data na listagem de agendamentos
 ```
 
-O `@planner` vai:
+O `@j.planner` vai:
 1. Explorar como a listagem atual funciona
 2. Perguntar: formato de data, granularidade (dia/semana/mês), se afeta a query ou só o frontend
 3. Escrever `plan.md` com 3–5 tasks
@@ -63,19 +63,19 @@ Situação: "sistema completo de pagamentos com Stripe"
 # Passo 1: spec detalhada primeiro
 /spec sistema de pagamentos com Stripe
 
-# @spec-writer vai conduzir entrevista de 5 fases:
+# @j.spec-writer vai conduzir entrevista de 5 fases:
 # Discovery → Requirements → Contract → Data → Review
 # Escreve docs/specs/sistema-pagamentos.md
 
 # Passo 2: plano baseado na spec
 /plan
 
-# @planner lê a spec, planeja em waves
+# @j.planner lê a spec, planeja em waves
 
 # Passo 3: implementar
 /implement
 
-# @implementer executa wave por wave, @validator verifica contra a spec
+# @j.implementer executa wave por wave, @j.validator verifica contra a spec
 ```
 
 ---
@@ -123,9 +123,9 @@ Situação: 10 features pequenas do backlog, independentes entre si
 O `@ulw-loop` vai:
 1. Identificar tasks que não têm dependências entre si
 2. Criar um worktree por task em `worktrees/`
-3. Rodar `@implementer` em paralelo em cada worktree
+3. Rodar `@j.implementer` em paralelo em cada worktree
 4. Validar cada wave
-5. `@unify` mergea tudo e cria o PR
+5. `@j.unify` mergea tudo e cria o PR
 
 ---
 
@@ -159,12 +159,12 @@ Não precisa mencionar skills explicitamente. O plugin `skill-inject` detecta o 
 
 Não precisa lembrar o agente de continuar. Se `execution-state.md` tem tasks incompletas, o plugin re-injeta a lista quando a sessão fica idle. O agente vai voltar ao trabalho.
 
-### Quando usar `@reviewer` vs `@validator`
+### Quando usar `@j.reviewer` vs `@j.validator`
 
-- `@validator` — pergunta "a implementação atende a spec?" (blocking, objetivo)
-- `@reviewer` — pergunta "a implementação tem boa qualidade?" (advisory, subjetivo)
+- `@j.validator` — pergunta "a implementação atende a spec?" (blocking, objetivo)
+- `@j.reviewer` — pergunta "a implementação tem boa qualidade?" (advisory, subjetivo)
 
-Use os dois: primeiro `@validator` para corretude, depois `@reviewer` para qualidade.
+Use os dois: primeiro `@j.validator` para corretude, depois `@j.reviewer` para qualidade.
 
 ---
 

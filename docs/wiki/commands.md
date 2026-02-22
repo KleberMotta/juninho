@@ -6,7 +6,7 @@ Comandos slash em `.opencode/commands/` aparecem no autocomplete do OpenCode.
 
 ## /plan
 
-**Invoca:** `@planner`
+**Invoca:** `@j.planner`
 
 Transforma um objetivo em um `plan.md` executável.
 
@@ -31,7 +31,7 @@ Transforma um objetivo em um `plan.md` executável.
 
 ## /spec
 
-**Invoca:** `@spec-writer`
+**Invoca:** `@j.spec-writer`
 
 Conduz uma entrevista estruturada de 5 fases e produz uma spec detalhada.
 
@@ -55,7 +55,7 @@ Conduz uma entrevista estruturada de 5 fases e produz uma spec detalhada.
 
 ## /implement
 
-**Invoca:** `@implementer`
+**Invoca:** `@j.implementer`
 
 Executa o plano ativo (ou spec especificada) wave por wave.
 
@@ -75,7 +75,7 @@ Executa o plano ativo (ou spec especificada) wave por wave.
 **O agente:**
 1. Lê o `plan.md` ativo (injetado pelo plugin `plan-autoload`)
 2. Executa wave por wave com validação em cada etapa
-3. Spawna `@validator` se há spec correspondente
+3. Spawna `@j.validator` se há spec correspondente
 4. Atualiza `execution-state.md` com progresso
 
 ---
@@ -187,8 +187,8 @@ Wave 2 (sequencial):
   main → integração + wire-up
 
 Wave 3:
-  @validator → verifica todas as tasks
-  @unify → merge + PR
+  @j.validator → verifica todas as tasks
+  @j.unify → merge + PR
 ```
 
 **Quando usar:** backlog de tasks independentes (sem dependências cruzadas de arquivos).
@@ -248,7 +248,7 @@ jest --passWithNoTests
 
 ## /pr-review
 
-**Invoca:** `@reviewer`
+**Invoca:** `@j.reviewer`
 
 Revisão advisory do diff atual — analisa o que mudou desde a última branch base.
 
@@ -258,7 +258,7 @@ Revisão advisory do diff atual — analisa o que mudou desde a última branch b
 
 **O que faz:**
 - Executa `git diff` contra a branch base
-- Passa o diff para `@reviewer` com contexto do projeto
+- Passa o diff para `@j.reviewer` com contexto do projeto
 - Retorna findings em três níveis: Critical / Important / Minor
 
 **Resultado:** feedback de qualidade sem bloquear — você decide o que agir antes de abrir o PR.
@@ -295,7 +295,7 @@ Exibe um resumo do `execution-state.md` atual.
 
 ## /unify
 
-**Invoca:** `@unify`
+**Invoca:** `@j.unify`
 
 Fecha o loop após implementação: reconcilia worktrees, documenta e cria o PR.
 
@@ -318,16 +318,16 @@ Fecha o loop após implementação: reconcilia worktrees, documenta e cria o PR.
 
 | Comando | Agente | Quando usar |
 |---------|--------|-------------|
-| `/plan` | @planner | Qualquer task não trivial |
-| `/spec` | @spec-writer | Features complexas com requisitos ambíguos |
-| `/implement` | @implementer | Após ter um plano |
+| `/plan` | @j.planner | Qualquer task não trivial |
+| `/spec` | @j.spec-writer | Features complexas com requisitos ambíguos |
+| `/implement` | @j.implementer | Após ter um plano |
 | `/init-deep` | (exploração) | Setup inicial ou pós-refactor |
 | `/start-work` | — | Início de sessão focada |
 | `/handoff` | — | Fim de sessão longa |
-| `/ulw-loop` | @implementer × N | Múltiplas tasks independentes |
+| `/ulw-loop` | @j.implementer × N | Múltiplas tasks independentes |
 | `/check` | — | Quality gates completos (tsc + eslint + jest) |
 | `/lint` | — | Apenas o linter |
 | `/test` | — | Apenas a suite de testes |
-| `/pr-review` | @reviewer | Revisão advisory do diff atual |
+| `/pr-review` | @j.reviewer | Revisão advisory do diff atual |
 | `/status` | — | Resumo do execution-state.md |
-| `/unify` | @unify | Fechar o loop: merge + PR |
+| `/unify` | @j.unify | Fechar o loop: merge + PR |

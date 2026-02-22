@@ -27,11 +27,11 @@ juninho setup
 
 `juninho setup` automatically creates:
 
-- **7 agents** in `.opencode/agents/` (planner, spec-writer, implementer, validator, reviewer, plan-reviewer, unify)
+- **9 agents** in `.opencode/agents/` (j.planner, j.spec-writer, j.implementer, j.validator, j.reviewer, j.plan-reviewer, j.unify, j.explore, j.librarian)
 - **5 skills** in `.opencode/skills/` (test-writing, page-creation, api-route-creation, server-action-creation, schema-migration)
-- **10 plugins** in `.opencode/plugins/` (auto-discovered by OpenCode)
+- **11 plugins** in `.opencode/plugins/` (auto-discovered by OpenCode)
 - **4 tools** in `.opencode/tools/` (find-pattern, next-version, lsp, ast-grep)
-- **7 slash commands** in `.opencode/commands/` (/plan, /spec, /implement, /init-deep, /start-work, /handoff, /ulw-loop)
+- **13 slash commands** in `.opencode/commands/` (/plan, /spec, /implement, /init-deep, /start-work, /handoff, /ulw-loop, /check, /lint, /test, /pr-review, /status, /unify)
 - **State files** for persistent context and execution tracking
 - **Docs scaffold** with AGENTS.md, domain index, and manifest
 
