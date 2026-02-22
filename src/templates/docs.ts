@@ -84,9 +84,8 @@ export function patchOpencodeJson(projectDir: string): void {
       // Context7 is global — available to all agents for live library documentation.
       // Low context cost, high utility across implementer, planner, and validator.
       context7: {
-        type: "stdio",
-        command: "npx",
-        args: ["-y", "@upstash/context7-mcp@latest"],
+        type: "local",
+        command: ["npx", "-y", "@upstash/context7-mcp@latest"],
       },
     },
   }
