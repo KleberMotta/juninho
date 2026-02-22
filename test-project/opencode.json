@@ -1,0 +1,58 @@
+{
+  "agent": {
+    "planner": {
+      "description": "Strategic planner — turn a vague goal into an actionable plan.md",
+      "mode": "subagent",
+      "model": "anthropic/claude-opus-4-5"
+    },
+    "plan-reviewer": {
+      "description": "Reviews plans for quality — approve or reject with actionable feedback",
+      "mode": "subagent",
+      "model": "anthropic/claude-sonnet-4-5",
+      "permission": {
+        "task": "deny",
+        "bash": "deny"
+      }
+    },
+    "spec-writer": {
+      "description": "Writes detailed feature specs via 5-phase interview",
+      "mode": "subagent",
+      "model": "anthropic/claude-opus-4-5"
+    },
+    "implementer": {
+      "description": "Executes implementation plans wave by wave",
+      "mode": "subagent",
+      "model": "anthropic/claude-sonnet-4-5"
+    },
+    "validator": {
+      "description": "Validates implementation against spec — blocks on failures",
+      "mode": "subagent",
+      "model": "anthropic/claude-sonnet-4-5"
+    },
+    "reviewer": {
+      "description": "Advisory code reviewer — read-only, never blocks",
+      "mode": "subagent",
+      "model": "anthropic/claude-sonnet-4-5",
+      "permission": {
+        "bash": "deny",
+        "edit": "deny",
+        "write": "deny"
+      }
+    },
+    "unify": {
+      "description": "Reconciles plan vs delivery, updates docs, merges worktrees, creates PR",
+      "mode": "subagent",
+      "model": "anthropic/claude-sonnet-4-5"
+    }
+  },
+  "mcp": {
+    "context7": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@upstash/context7-mcp@latest"
+      ]
+    }
+  }
+}

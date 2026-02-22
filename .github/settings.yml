@@ -1,0 +1,86 @@
+# .github/settings.yml
+# Configuração do repositório via probot/settings app.
+# Instale em: https://github.com/apps/settings
+# Após instalar, as configurações abaixo são aplicadas automaticamente ao fazer push.
+
+repository:
+  name: juninho
+  description: "Bootstrap the Agentic Coding Framework into any OpenCode project"
+  homepage: https://www.npmjs.com/package/juninho
+  topics: opencode, agents, framework, cli, agentic-coding
+  private: false
+  has_issues: true
+  has_projects: false
+  has_wiki: true
+  has_downloads: true
+  default_branch: main
+  allow_squash_merge: true
+  allow_merge_commit: false   # Força squash ou rebase
+  allow_rebase_merge: true
+  delete_branch_on_merge: true  # Limpa branches após merge
+  allow_auto_merge: false
+
+# Labels para issues e PRs
+labels:
+  - name: bug
+    color: "d73a4a"
+    description: "Algo não está funcionando"
+
+  - name: feature
+    color: "0075ca"
+    description: "Nova funcionalidade ou requisição"
+
+  - name: docs
+    color: "0075ca"
+    description: "Melhorias ou adições à documentação"
+
+  - name: question
+    color: "d876e3"
+    description: "Informação adicional necessária"
+
+  - name: good first issue
+    color: "7057ff"
+    description: "Bom para novos contribuidores"
+
+  - name: help wanted
+    color: "008672"
+    description: "Atenção extra necessária"
+
+  - name: breaking change
+    color: "e4e669"
+    description: "Mudança que quebra compatibilidade"
+
+  - name: alpha
+    color: "fbca04"
+    description: "Relacionado à fase alpha"
+
+  - name: plugin
+    color: "bfd4f2"
+    description: "Relacionado a plugins"
+
+  - name: agent
+    color: "d4c5f9"
+    description: "Relacionado a agentes"
+
+  - name: wontfix
+    color: "ffffff"
+    description: "Não será corrigido"
+
+# Proteção de branches
+branches:
+  - name: main
+    protection:
+      required_pull_request_reviews:
+        required_approving_review_count: 1
+        dismiss_stale_reviews: true
+        require_code_owner_reviews: true   # Respeita CODEOWNERS
+      required_status_checks:
+        strict: true   # Branch deve estar atualizada com main
+        contexts:
+          - "Build & Type Check (18.x)"
+          - "Build & Type Check (20.x)"
+          - "Build & Type Check (22.x)"
+      enforce_admins: false   # Admin pode fazer push direto se necessário
+      restrictions: null       # Sem restrição de quem pode fazer push (além das regras acima)
+      allow_force_pushes: false
+      allow_deletions: false

@@ -1,0 +1,42 @@
+# Principles Manifest
+
+CARL lookup table — maps domain keywords to relevant files and patterns.
+Updated by /init-deep and manually over time.
+
+## Format
+
+Each entry: KEYWORD → file:path | pattern:name | agent:name
+
+---
+
+## Keywords
+
+<!-- api → file:app/api -->
+<!-- auth → file:middleware.ts | agent:@validator -->
+<!-- database → file:prisma/schema.prisma | file:lib/db.ts -->
+<!-- test → skill:test-writing | agent:@validator -->
+<!-- plan → file:plan.md | agent:@planner -->
+<!-- spec → file:docs/specs/ | agent:@spec-writer -->
+<!-- implement → agent:@implementer | file:plan.md -->
+<!-- validate → agent:@validator | file:docs/specs/ -->
+<!-- review → agent:@reviewer -->
+<!-- migration → skill:schema-migration | tool:next_version -->
+<!-- component → skill:page-creation -->
+<!-- action → skill:server-action-creation -->
+<!-- route → skill:api-route-creation -->
+<!-- pattern → tool:find_pattern -->
+
+## Architectural Directives
+
+<!-- Non-negotiable rules from the project architect -->
+<!-- Format: DIRECTIVE: description -->
+<!-- Example: DIRECTIVE: Always validate inputs with Zod at API boundaries -->
+<!-- Example: DIRECTIVE: Never expose Prisma types to the API layer — use DTOs -->
+
+## Technology Decisions
+
+<!-- Format: DECISION: <what> — REASON: <why> — DATE: YYYY-MM-DD -->
+
+---
+
+*Populate this file as you discover patterns. CARL uses it to inject context automatically.*

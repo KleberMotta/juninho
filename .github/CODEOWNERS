@@ -1,0 +1,26 @@
+# CODEOWNERS
+# Cada linha define quem é responsável por aprovar PRs que tocam esses arquivos.
+# Sintaxe: <padrão de arquivo>  <@usuario ou @org/team>
+#
+# Substitua @seu-usuario pelo seu GitHub username antes de fazer push.
+
+# Donos globais — revisam qualquer PR sem dono específico
+*                           @seu-usuario
+
+# Core do CLI — requer revisão cuidadosa (breaking changes de API)
+src/cli.ts                  @seu-usuario
+src/installer.ts            @seu-usuario
+
+# Templates de agentes — mudanças afetam comportamento dos agentes em todos os projetos
+src/templates/agents.ts     @seu-usuario
+
+# Plugins — mudanças afetam hooks que rodam em todos os projetos
+src/templates/plugins.ts    @seu-usuario
+
+# CI/CD — mudanças de infra requerem revisão separada
+.github/workflows/          @seu-usuario
+
+# Docs
+README.md                   @seu-usuario
+CONTRIBUTING.md             @seu-usuario
+docs/                       @seu-usuario
