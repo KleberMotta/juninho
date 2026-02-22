@@ -21,10 +21,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20.x"
+          node-version: "24.x"  # Node 24+ ou npm ≥11.5.1 são exigidos pelo Trusted Publisher OIDC
           cache: "npm"
-          # Sem registry-url: evita criar .npmrc com _authToken vazio
-          # que conflita com o fluxo OIDC do Trusted Publisher
 
       - name: Install dependencies
         run: npm ci
