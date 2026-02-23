@@ -1,26 +1,34 @@
 import { writeFileSync } from "fs"
 import path from "path"
+import { type ModelTier, DEFAULT_MODELS } from "../models.js"
 
-export function writeAgents(projectDir: string): void {
+export interface AgentModels {
+  strong: string
+  medium: string
+  weak: string
+}
+
+export function writeAgents(projectDir: string, models?: AgentModels): void {
+  const m = models ?? { ...DEFAULT_MODELS }
   const agentsDir = path.join(projectDir, ".opencode", "agents")
 
-  writeFileSync(path.join(agentsDir, "j.planner.md"), PLANNER)
-  writeFileSync(path.join(agentsDir, "j.plan-reviewer.md"), PLAN_REVIEWER)
-  writeFileSync(path.join(agentsDir, "j.spec-writer.md"), SPEC_WRITER)
-  writeFileSync(path.join(agentsDir, "j.implementer.md"), IMPLEMENTER)
-  writeFileSync(path.join(agentsDir, "j.validator.md"), VALIDATOR)
-  writeFileSync(path.join(agentsDir, "j.reviewer.md"), REVIEWER)
-  writeFileSync(path.join(agentsDir, "j.unify.md"), UNIFY)
-  writeFileSync(path.join(agentsDir, "j.explore.md"), EXPLORE)
-  writeFileSync(path.join(agentsDir, "j.librarian.md"), LIBRARIAN)
+  writeFileSync(path.join(agentsDir, "j.planner.md"), planner(m.strong))
+  writeFileSync(path.join(agentsDir, "j.plan-reviewer.md"), planReviewer(m.medium))
+  writeFileSync(path.join(agentsDir, "j.spec-writer.md"), specWriter(m.strong))
+  writeFileSync(path.join(agentsDir, "j.implementer.md"), implementer(m.medium))
+  writeFileSync(path.join(agentsDir, "j.validator.md"), validator(m.medium))
+  writeFileSync(path.join(agentsDir, "j.reviewer.md"), reviewer(m.medium))
+  writeFileSync(path.join(agentsDir, "j.unify.md"), unify(m.medium))
+  writeFileSync(path.join(agentsDir, "j.explore.md"), explore(m.weak))
+  writeFileSync(path.join(agentsDir, "j.librarian.md"), librarian(m.weak))
 }
 
 // ─── Planner ────────────────────────────────────────────────────────────────
 
-const PLANNER = `---
-description: Strategic planner — three-phase pipeline (Metis→Prometheus→Momus). Spawns explore+librarian for pre-analysis, interviews developer, delivers approved plan.md. Use for /plan.
+const planner = (model: string) => `---
+description: Strategic planner — three-phase pipeline (Metis→Prometheus→Momus). Spawns explore+librarian for pre-analysis, interviews developer, delivers approved plan.md. Use for /j.plan.
 mode: subagent
-model: github-copilot/claude-opus-4.6
+model: ${model}
 ---
 
 You are the **Planner** — a single agent that orchestrates three internal phases to deliver an approved, executable plan. The \`build\` agent makes one call to you; you manage the full cycle and return \`plan.md\` approved.
@@ -193,7 +201,7 @@ Write \`.opencode/state/.plan-ready\` with contents:
 \`docs/specs/{feature-slug}/plan.md\`
 
 Report to developer:
-"Plan approved. Run \`/implement\` to execute, or \`/spec\` first if you want a formal spec."
+"Plan approved. Run \`/j.implement\` to execute, or \`/j.spec\` first if you want a formal spec."
 
 ---
 
@@ -208,10 +216,10 @@ Report to developer:
 
 // ─── Plan Reviewer ───────────────────────────────────────────────────────────
 
-const PLAN_REVIEWER = `---
+const planReviewer = (model: string) => `---
 description: Executability gate for plans. Approval bias — rejects only genuine blockers. Max 3 issues. Used internally by planner (Phase 3). Do not call directly.
 mode: subagent
-model: github-copilot/claude-sonnet-4.6
+model: ${model}
 tools:
   task: false
   bash: false
@@ -273,10 +281,10 @@ Issues (max 3, each with a concrete fix):
 
 // ─── Spec Writer ─────────────────────────────────────────────────────────────
 
-const SPEC_WRITER = `---
-description: Produces structured specifications through a 5-phase interview. Write access to docs/specs/ only. Use for /spec command before implementing complex features.
+const specWriter = (model: string) => `---
+description: Produces structured specifications through a 5-phase interview. Write access to docs/specs/ only. Use for /j.spec command before implementing complex features.
 mode: subagent
-model: github-copilot/claude-opus-4.6
+model: ${model}
 tools:
   bash: false
   task: true
@@ -416,16 +424,16 @@ export async function createFoo(input: CreateFooInput): Promise<ActionResult<Foo
 ## Output Contract
 
 After writing:
-1. Tell developer: "Spec written to \`docs/specs/{slug}/spec.md\` — review and approve, then run \`/plan\` to build the execution plan."
+1. Tell developer: "Spec written to \`docs/specs/{slug}/spec.md\` — review and approve, then run \`/j.plan\` to build the execution plan."
 2. Do NOT start planning or implementing.
 `
 
 // ─── Implementer ─────────────────────────────────────────────────────────────
 
-const IMPLEMENTER = `---
-description: Executes implementation plans wave by wave using git worktrees for parallel tasks. READ→ACT→COMMIT→VALIDATE loop per task. Use for /implement.
+const implementer = (model: string) => `---
+description: Executes implementation plans wave by wave using git worktrees for parallel tasks. READ→ACT→COMMIT→VALIDATE loop per task. Use for /j.implement.
 mode: subagent
-model: github-copilot/claude-sonnet-4.6
+model: ${model}
 ---
 
 You are the **Implementer** — you execute plans precisely, enforcing the READ→ACT→COMMIT→VALIDATE loop for every task, with git worktrees for parallel wave execution.
@@ -438,6 +446,7 @@ You are the **Implementer** — you execute plans precisely, enforcing the READ�
 2. Read \`docs/specs/{feature-slug}/plan.md\` (task list and wave assignments)
 3. Read \`.opencode/state/execution-state.md\` (current task status)
 4. Read \`.opencode/state/persistent-context.md\` (project conventions and decisions)
+5. Read \`.opencode/state/implementer-work.md\` (your scratch space — resume previous context if it has content)
 
 ---
 
@@ -515,9 +524,17 @@ Validator response:
 
 ### UPDATE STATE
 
-After each task completes, update \`.opencode/state/execution-state.md\`:
-- Mark task as complete in the task table
-- Log decision or notes if any deviation from plan occurred
+After each task completes:
+
+1. Update \`.opencode/state/execution-state.md\`:
+   - Mark task as complete in the task table
+   - Log files modified and completion timestamp
+
+2. Update \`.opencode/state/implementer-work.md\`:
+   - Record the current task ID, wave, worktree, and branch
+   - Log any decisions that deviate from or extend the plan
+   - List blockers if any arose and how they were resolved
+   - Track files modified this session
 
 ---
 
@@ -525,7 +542,7 @@ After each task completes, update \`.opencode/state/execution-state.md\`:
 
 When all tasks in all waves are complete:
 1. Update \`.opencode/state/execution-state.md\` — mark all tasks done
-2. Signal UNIFY: "All tasks complete. Run \`/unify\` to merge worktrees and create PR."
+2. Signal UNIFY: "All tasks complete. Run \`/j.unify\` to merge worktrees and create PR."
 
 Do NOT merge worktrees or create PRs yourself — that is UNIFY's responsibility.
 
@@ -542,10 +559,10 @@ Do NOT merge worktrees or create PRs yourself — that is UNIFY's responsibility
 
 // ─── Validator ────────────────────────────────────────────────────────────────
 
-const VALIDATOR = `---
+const validator = (model: string) => `---
 description: Semantic validation judge — reads spec BEFORE code. Returns BLOCK/FIX/NOTE/APPROVED. Has write access to fix FIX-tier issues directly. Use after implementer.
 mode: subagent
-model: github-copilot/claude-sonnet-4.6
+model: ${model}
 ---
 
 You are the **Validator** — you ensure implementations satisfy their specifications. The core question is not "is this code correct?" but "does this code satisfy the specification?"
@@ -629,10 +646,10 @@ Write validation results to \`.opencode/state/validator-work.md\`:
 
 // ─── Reviewer ────────────────────────────────────────────────────────────────
 
-const REVIEWER = `---
-description: Advisory code reviewer — provides quality feedback post-PR. Read-only, never modifies code, never blocks the pipeline. Use for /pr-review.
+const reviewer = (model: string) => `---
+description: Advisory code reviewer — provides quality feedback post-PR. Read-only, never modifies code, never blocks the pipeline. Use for /j.pr-review.
 mode: subagent
-model: github-copilot/claude-sonnet-4.6
+model: ${model}
 tools:
   bash: false
   edit: false
@@ -703,10 +720,10 @@ Note: This review is **advisory**. LGTM means "looks good to me" — it does not
 
 // ─── Unify ────────────────────────────────────────────────────────────────────
 
-const UNIFY = `---
-description: Closes the loop after implementation — reconciles plan vs delivery, updates domain docs, merges worktrees, creates PR with spec body. Use for /unify.
+const unify = (model: string) => `---
+description: Closes the loop after implementation — reconciles plan vs delivery, updates domain docs, merges worktrees, creates PR with spec body. Use for /j.unify.
 mode: subagent
-model: github-copilot/claude-sonnet-4.6
+model: ${model}
 ---
 
 You are **Unify** — the mandatory final step of every feature implementation. No feature is complete without UNIFY. You close the loop: reconcile, document, merge, ship.
@@ -728,10 +745,14 @@ For each task:
 ### Step 2 — Log Decisions to Persistent Context
 
 Read \`.opencode/state/persistent-context.md\`.
-Append decisions made during implementation that should be remembered long-term:
+Read \`.opencode/state/validator-work.md\` — extract NOTE-tier deferred items and FIX-tier changes.
+Read \`.opencode/state/implementer-work.md\` — extract decisions, deviations from plan, and blockers resolved.
+
+Append to \`persistent-context.md\` decisions that should be remembered long-term:
 - Architectural choices and their rationale
-- Known issues deferred (from validator NOTEs)
+- Known issues deferred (from validator NOTEs in \`validator-work.md\`)
 - Patterns introduced or retired
+- Deviations from plan documented in \`implementer-work.md\`
 
 Write in present tense only — describe the current state, not historical events.
 
@@ -817,10 +838,10 @@ The spec.md body ensures reviewers have full context — problem statement, requ
 
 // ─── Explore ──────────────────────────────────────────────────────────────────
 
-const EXPLORE = `---
+const explore = (model: string) => `---
 description: Fast codebase research — file mapping, pattern grep, dependency tracing. Read-only, no delegation. Spawned by planner during Phase 1 pre-analysis.
 mode: subagent
-model: github-copilot/claude-haiku-4.5
+model: ${model}
 tools:
   bash: false
   write: false
@@ -902,10 +923,10 @@ Check \`docs/principles/manifest\` for relevant architectural directives.
 
 // ─── Librarian ────────────────────────────────────────────────────────────────
 
-const LIBRARIAN = `---
+const librarian = (model: string) => `---
 description: External documentation and OSS research — official docs, package APIs, reference implementations. Read-only, no delegation. Spawned by planner during Phase 1.
 mode: subagent
-model: github-copilot/claude-haiku-4.5
+model: ${model}
 tools:
   bash: false
   write: false

@@ -37,7 +37,7 @@ that should be remembered long-term about this project.
 ## Recurring Patterns
 
 <!-- Patterns that appear repeatedly in this codebase -->
-<!-- Update after /init-deep or when you discover a strong pattern -->
+<!-- Update after /j.init-deep or when you discover a strong pattern -->
 
 ## Anti-Patterns Found
 
@@ -64,13 +64,13 @@ The todo-enforcer plugin reads this file to prevent drift.
 
 ## Current Session
 
-- **Started**: (auto-filled by /start-work)
+- **Started**: (auto-filled by /j.start-work)
 - **Goal**: (auto-filled)
 - **Plan**: (path to plan.md if active)
 
 ## Task List
 
-<!-- Tasks are added by /plan and checked off by @j.implementer -->
+<!-- Tasks are added by /j.plan and checked off by @j.implementer -->
 <!-- Format: - [ ] task description (agent: @j.agentname) -->
 
 ## In Progress
@@ -94,7 +94,7 @@ The todo-enforcer plugin reads this file to prevent drift.
 ---
 
 *Last updated: (auto-filled)*
-*Next action: (fill in at end of session for /handoff)*
+*Next action: (fill in at end of session for /j.handoff)*
 `
 
 // ─── Validator Work ───────────────────────────────────────────────────────────

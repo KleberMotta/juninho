@@ -7,7 +7,7 @@ Este guia mostra como usar o juninho framework no dia a dia — do objetivo ao P
 ## Fluxo padrão
 
 ```
-Objetivo → /plan → (opcional: /spec) → /implement → @j.validator → @j.unify → PR
+Objetivo → /j.plan → (opcional: /j.spec) → /j.implement → @j.validator → @j.unify → PR
 ```
 
 ---
@@ -23,7 +23,7 @@ Situação: "a rota /api/clientes retorna 500 quando o ID não existe"
 @j.implementer fix the 500 error on /api/clientes when ID doesn't exist
 
 # Ou com contexto mínimo via plan
-/plan fix 500 error on GET /api/clientes/:id when record not found
+/j.plan fix 500 error on GET /api/clientes/:id when record not found
 ```
 
 O `@j.planner` vai classificar como `BUG`, fazer 1–2 perguntas, escrever um `plan.md` pequeno,
@@ -38,7 +38,7 @@ Situação: "adicionar filtro por data nos agendamentos"
 ```
 
 ```
-/plan adicionar filtro por data na listagem de agendamentos
+/j.plan adicionar filtro por data na listagem de agendamentos
 ```
 
 O `@j.planner` vai:
@@ -48,7 +48,7 @@ O `@j.planner` vai:
 
 Depois:
 ```
-/implement
+/j.implement
 ```
 
 ---
@@ -61,19 +61,19 @@ Situação: "sistema completo de pagamentos com Stripe"
 
 ```
 # Passo 1: spec detalhada primeiro
-/spec sistema de pagamentos com Stripe
+/j.spec sistema de pagamentos com Stripe
 
 # @j.spec-writer vai conduzir entrevista de 5 fases:
 # Discovery → Requirements → Contract → Data → Review
 # Escreve docs/specs/sistema-pagamentos.md
 
 # Passo 2: plano baseado na spec
-/plan
+/j.plan
 
 # @j.planner lê a spec, planeja em waves
 
 # Passo 3: implementar
-/implement
+/j.implement
 
 # @j.implementer executa wave por wave, @j.validator verifica contra a spec
 ```
@@ -84,13 +84,13 @@ Situação: "sistema completo de pagamentos com Stripe"
 
 ```
 # Início de sessão
-/start-work issue #42 — sistema de notificações
+/j.start-work issue #42 — sistema de notificações
 
 # Trabalho...
-/implement
+/j.implement
 
 # Fim de sessão — documentar estado antes de fechar
-/handoff
+/j.handoff
 ```
 
 O `@handoff` escreve em `execution-state.md`:
@@ -100,8 +100,8 @@ O `@handoff` escreve em `execution-state.md`:
 
 Na próxima sessão:
 ```
-/start-work
-# O plugin plan-autoload injeta o estado automaticamente
+/j.start-work
+# O plugin j.plan-autoload injeta o estado automaticamente
 ```
 
 ---
@@ -114,10 +114,10 @@ Situação: 10 features pequenas do backlog, independentes entre si
 
 ```
 # Popula execution-state.md com todas as tasks
-/plan implementar todas as features do backlog sprint 3
+/j.plan implementar todas as features do backlog sprint 3
 
 # Ativa modo de máximo paralelismo
-/ulw-loop
+/j.ulw-loop
 ```
 
 O `@ulw-loop` vai:
@@ -134,7 +134,7 @@ O `@ulw-loop` vai:
 Se o projeto já tem código e você quer que o CARL e os agentes entendam o domínio:
 
 ```
-/init-deep
+/j.init-deep
 ```
 
 Isso escaneia o codebase e preenche:
@@ -153,9 +153,9 @@ Quando você tomar uma decisão importante ("vamos usar Zustand em vez de Redux 
 
 ### Skills são automáticas
 
-Não precisa mencionar skills explicitamente. O plugin `skill-inject` detecta o tipo de arquivo e injeta as instruções certas. Escrever um teste? As regras de `test-writing` aparecem automaticamente.
+Não precisa mencionar skills explicitamente. O plugin `j.skill-inject` detecta o tipo de arquivo e injeta as instruções certas. Escrever um teste? As regras de `test-writing` aparecem automaticamente.
 
-### Deixe o `todo-enforcer` trabalhar
+### Deixe o `j.todo-enforcer` trabalhar
 
 Não precisa lembrar o agente de continuar. Se `execution-state.md` tem tasks incompletas, o plugin re-injeta a lista quando a sessão fica idle. O agente vai voltar ao trabalho.
 
@@ -178,13 +178,13 @@ cat .opencode/state/.plan-ready
 # deve conter o path para plan.md
 ```
 
-Se não existir, o `@planner` não concluiu ou o arquivo foi deletado. Rode `/plan` novamente.
+Se não existir, o `@planner` não concluiu ou o arquivo foi deletado. Rode `/j.plan` novamente.
 
-### "O plugin skill-inject não está ativando"
+### "O plugin j.skill-inject não está ativando"
 
 Verifique se o path do arquivo segue o padrão. Ex: para `api-route-creation` ativar, o arquivo deve ser `app/api/alguma-coisa/route.ts` — o padrão `app/api/**/*.ts`.
 
-Para ver os padrões: `cat .opencode/plugins/skill-inject.ts`
+Para ver os padrões: `cat .opencode/plugins/j.skill-inject.ts`
 
 ### "O hashline-edit rejeitou meu edit"
 

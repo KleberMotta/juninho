@@ -13,9 +13,9 @@ No OpenCode, mencione com `@`:
 
 Ou via slash commands (que invocam os agentes internamente):
 ```
-/plan
-/spec
-/implement
+/j.plan
+/j.spec
+/j.implement
 ```
 
 ---
@@ -45,7 +45,7 @@ O agente estratégico central. Transforma objetivos vagos em planos executáveis
 **Fase 3 — Momus (Loop de revisão)**
 - Spawna `@j.plan-reviewer`
 - Itera até aprovação (OKAY)
-- Marca `.opencode/state/.plan-ready` para o plugin `plan-autoload`
+- Marca `.opencode/state/.plan-ready` para o plugin `j.plan-autoload`
 
 ### Output
 - `plan.md` — tarefas em XML com dependências e critérios de aceitação
@@ -124,7 +124,7 @@ Para tarefas complexas, paralela via worktrees:
 | 3 — Integration | Wire-up, testes de integração | Sequencial |
 
 ### Hashline awareness
-Usa referências `NN#XX:` para edições estáveis. Se o plugin `hashline-edit` rejeitar um edit como stale, relê o arquivo antes de tentar novamente.
+Usa referências `NN#XX:` para edições estáveis. Se o plugin `j.hashline-edit` rejeitar um edit como stale, relê o arquivo antes de tentar novamente.
 
 ---
 
@@ -237,12 +237,12 @@ Read-only — sem escrita no codebase.
 ## Modelo mental: quando usar cada agente
 
 ```
-Objetivo vago → /plan (@j.planner)
+Objetivo vago → /j.plan (@j.planner)
                     ↓
               Fase 1 (Metis): exploração paralela
               @j.explore (codebase) + @j.librarian (docs externos)
                     ↓
-Feature complexa → /spec (@j.spec-writer) → /plan → /implement
+Feature complexa → /j.spec (@j.spec-writer) → /j.plan → /j.implement
                                                        ↓
                                                @j.implementer executa
                                                        ↓

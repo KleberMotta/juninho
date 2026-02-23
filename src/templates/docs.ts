@@ -1,5 +1,12 @@
 import { writeFileSync, readFileSync, existsSync } from "fs"
 import path from "path"
+import { DEFAULT_MODELS } from "../models.js"
+
+export interface OpencodeModels {
+  strong: string
+  medium: string
+  weak: string
+}
 
 export function writeDocs(projectDir: string): void {
   writeFileSync(path.join(projectDir, "AGENTS.md"), AGENTS_MD)
@@ -7,7 +14,8 @@ export function writeDocs(projectDir: string): void {
   writeFileSync(path.join(projectDir, "docs", "principles", "manifest"), MANIFEST)
 }
 
-export function patchOpencodeJson(projectDir: string): void {
+export function patchOpencodeJson(projectDir: string, models?: OpencodeModels): void {
+  const m = models ?? { ...DEFAULT_MODELS }
   const jsonPath = path.join(projectDir, "opencode.json")
 
   let existing: Record<string, unknown> = {}
@@ -25,8 +33,95 @@ export function patchOpencodeJson(projectDir: string): void {
       // Context7 is global — available to all agents for live library documentation.
       // Low context cost, high utility across implementer, planner, and validator.
       context7: {
-        type: "local",
-        command: ["npx", "-y", "@upstash/context7-mcp@latest"],
+        type: "stdio",
+        command: "npx",
+        args: ["-y", "@upstash/context7-mcp@latest"],
+      },
+    },
+    agent: {
+      // Permission model from framework Section 27.
+      // Platform-level enforcement — more reliable than prompt-level instructions.
+      "j.planner": {
+        model: m.strong,
+        permission: {
+          write: "allow",   // restricted to docs/specs/ in prompt
+          bash: "allow",    // restricted to git log, git diff, ls in prompt
+          task: "allow",    // spawns explore, librarian, plan-reviewer
+          edit: "deny",
+          question: "allow",
+        },
+      },
+      "j.plan-reviewer": {
+        model: m.medium,
+        permission: {
+          task: "deny",
+          bash: "deny",
+          write: "deny",
+          edit: "deny",
+        },
+      },
+      "j.spec-writer": {
+        model: m.strong,
+        permission: {
+          bash: "deny",
+          write: "allow",  // restricted to docs/specs/ in prompt
+          edit: "deny",
+          task: "allow",   // Phase 0: spawns explore for pre-research
+        },
+      },
+      "j.implementer": {
+        model: m.medium,
+        permission: {
+          bash: "allow",
+          write: "allow",
+          edit: "allow",
+          task: "allow",   // spawns validator subagent
+        },
+      },
+      "j.validator": {
+        model: m.medium,
+        permission: {
+          bash: "allow",   // restricted to typecheck, test, lint in prompt
+          write: "allow",  // for FIX-tier direct fixes
+          edit: "allow",
+          task: "deny",
+        },
+      },
+      "j.reviewer": {
+        model: m.medium,
+        permission: {
+          bash: "deny",
+          write: "deny",
+          edit: "deny",
+          task: "deny",
+        },
+      },
+      "j.unify": {
+        model: m.medium,
+        permission: {
+          bash: "allow",
+          write: "allow",
+          edit: "allow",
+          task: "allow",
+        },
+      },
+      "j.explore": {
+        model: m.weak,
+        permission: {
+          bash: "deny",
+          write: "deny",
+          edit: "deny",
+          task: "deny",
+        },
+      },
+      "j.librarian": {
+        model: m.weak,
+        permission: {
+          bash: "deny",
+          write: "deny",
+          edit: "deny",
+          task: "deny",
+        },
       },
     },
   }
@@ -78,34 +173,34 @@ This project uses the **Agentic Coding Framework** v2.1 — installed by [juninh
 
 **Path A — Spec-driven (formal features):**
 \`\`\`
-/spec → docs/specs/{slug}/spec.md (approved)
-  → /plan → docs/specs/{slug}/plan.md (approved)
-  → /implement → @j.validator gates each commit → /unify → PR
+/j.spec → docs/specs/{slug}/spec.md (approved)
+  → /j.plan → docs/specs/{slug}/plan.md (approved)
+  → /j.implement → @j.validator gates each commit → /j.unify → PR
 \`\`\`
 
 **Path B — Plan-driven (lightweight tasks):**
 \`\`\`
-/plan → plan.md (approved) → plan-autoload injects on next session
-  → /implement → @j.validator gates each commit → /unify → PR
+/j.plan → plan.md (approved) → plan-autoload injects on next session
+  → /j.implement → @j.validator gates each commit → /j.unify → PR
 \`\`\`
 
 ## Commands
 
 | Command | Purpose |
 |---------|---------|
-| \`/spec <feature>\` | 5-phase interview → \`docs/specs/{slug}/spec.md\` |
-| \`/plan <goal>\` | 3-phase pipeline (Metis→Prometheus→Momus) → \`plan.md\` approved |
-| \`/implement\` | Execute active plan wave by wave with validation |
-| \`/check\` | Run typecheck + lint + tests (same as pre-commit hook) |
-| \`/lint\` | Run linter only |
-| \`/test\` | Run test suite only |
-| \`/pr-review\` | Advisory review of current branch diff |
-| \`/status\` | Show \`execution-state.md\` summary |
-| \`/unify\` | Reconcile, update docs, merge worktrees, create PR |
-| \`/start-work <task>\` | Initialize a focused work session |
-| \`/handoff\` | Prepare end-of-session handoff doc |
-| \`/init-deep\` | Generate hierarchical AGENTS.md + populate domain docs |
-| \`/ulw-loop\` | Maximum parallelism mode |
+| \`/j.spec <feature>\` | 5-phase interview → \`docs/specs/{slug}/spec.md\` |
+| \`/j.plan <goal>\` | 3-phase pipeline (Metis→Prometheus→Momus) → \`plan.md\` approved |
+| \`/j.implement\` | Execute active plan wave by wave with validation |
+| \`/j.check\` | Run typecheck + lint + tests (same as pre-commit hook) |
+| \`/j.lint\` | Run linter only |
+| \`/j.test\` | Run test suite only |
+| \`/j.pr-review\` | Advisory review of current branch diff |
+| \`/j.status\` | Show \`execution-state.md\` summary |
+| \`/j.unify\` | Reconcile, update docs, merge worktrees, create PR |
+| \`/j.start-work <task>\` | Initialize a focused work session |
+| \`/j.handoff\` | Prepare end-of-session handoff doc |
+| \`/j.init-deep\` | Generate hierarchical AGENTS.md + populate domain docs |
+| \`/j.ulw-loop\` | Maximum parallelism mode |
 
 ## Agent Roster
 
@@ -131,7 +226,7 @@ Reads spec BEFORE code. BLOCK / FIX / NOTE / APPROVED.
 Can fix FIX-tier issues directly. Writes audit trail to \`validator-work.md\`.
 
 ### @j.reviewer
-Post-PR advisory review. Read-only, never blocks. Use via \`/pr-review\`.
+Post-PR advisory review. Read-only, never blocks. Use via \`/j.pr-review\`.
 
 ### @j.unify
 Closes the loop: reconcile, update domain docs, merge worktrees, \`gh pr create\`.
@@ -148,9 +243,9 @@ Fetches official API docs via Context7 MCP.
 
 | Tier | Mechanism | When |
 |------|-----------|------|
-| 1 | Hierarchical \`AGENTS.md\` + \`directory-agents-injector\` | Always — per directory when files are read |
-| 2 | \`carl-inject\` — keywords → principles + domain docs | Every \`UserPromptSubmit\` |
-| 3 | \`skill-inject\` — file pattern → SKILL.md | \`PreToolUse\` on Write/Edit |
+| 1 | Hierarchical \`AGENTS.md\` + \`j.directory-agents-injector\` | Always — per directory when files are read |
+| 2 | \`j.carl-inject\` — keywords → principles + domain docs | Every \`UserPromptSubmit\` |
+| 3 | \`j.skill-inject\` — file pattern → SKILL.md | \`PreToolUse\` on Write/Edit |
 | 4 | \`<skills>\` declaration in \`plan.md\` task | Explicit per-task requirement |
 | 5 | State files in \`.opencode/state/\` | Runtime, inter-session |
 
@@ -158,17 +253,17 @@ Fetches official API docs via Context7 MCP.
 
 | Plugin | Hook | Purpose |
 |--------|------|---------|
-| \`directory-agents-injector\` | Read | Inject directory-scoped AGENTS.md files (Tier 1) |
-| \`env-protection\` | Any tool | Block sensitive file reads/writes |
-| \`auto-format\` | Write/Edit | Auto-format after file changes |
-| \`plan-autoload\` | session.idle | Inject active plan into context |
-| \`carl-inject\` | UserPromptSubmit | Inject principles + domain docs by keyword |
-| \`skill-inject\` | Write/Edit | Inject skill by file pattern |
-| \`intent-gate\` | UserPromptSubmit | Classify intent before action |
-| \`todo-enforcer\` | session.idle | Re-inject incomplete tasks |
-| \`comment-checker\` | Write/Edit | Flag obvious/redundant comments |
-| \`hashline-read\` | Read | Tag lines with content hashes |
-| \`hashline-edit\` | Edit | Validate hash references before editing |
+| \`j.directory-agents-injector\` | Read | Inject directory-scoped AGENTS.md files (Tier 1) |
+| \`j.env-protection\` | Any tool | Block sensitive file reads/writes |
+| \`j.auto-format\` | Write/Edit | Auto-format after file changes |
+| \`j.plan-autoload\` | session.idle | Inject active plan into context |
+| \`j.carl-inject\` | UserPromptSubmit | Inject principles + domain docs by keyword |
+| \`j.skill-inject\` | PreToolUse Write/Edit | Inject skill by file pattern |
+| \`j.intent-gate\` | UserPromptSubmit | Classify intent before action |
+| \`j.todo-enforcer\` | session.idle | Re-inject incomplete tasks |
+| \`j.comment-checker\` | Write/Edit | Flag obvious/redundant comments |
+| \`j.hashline-read\` | Read | Tag lines with content hashes |
+| \`j.hashline-edit\` | Edit | Validate hash references before editing |
 
 ## Custom Tools
 
@@ -189,11 +284,11 @@ Fetches official API docs via Context7 MCP.
 
 | Skill | Activates on | Notes |
 |-------|-------------|-------|
-| \`test-writing\` | \`*.test.ts\`, \`*.spec.ts\` | Optional: uncomment Playwright MCP in frontmatter for E2E |
-| \`page-creation\` | \`app/**/page.tsx\` | |
-| \`api-route-creation\` | \`app/api/**/*.ts\` | |
-| \`server-action-creation\` | \`**/actions.ts\` | |
-| \`schema-migration\` | \`schema.prisma\` | |
+| \`j.test-writing\` | \`*.test.ts\`, \`*.spec.ts\` | Optional: uncomment Playwright MCP in frontmatter for E2E |
+| \`j.page-creation\` | \`app/**/page.tsx\` | |
+| \`j.api-route-creation\` | \`app/api/**/*.ts\` | |
+| \`j.server-action-creation\` | \`**/actions.ts\` | |
+| \`j.schema-migration\` | \`schema.prisma\` | |
 
 ## State Files
 
@@ -211,7 +306,7 @@ Fetches official API docs via Context7 MCP.
 - Domain docs: \`docs/domain/{domain}/*.md\` — indexed in \`docs/domain/INDEX.md\`
 - Principles: \`docs/principles/{topic}.md\` — registered in \`docs/principles/manifest\`
 - Worktrees: \`worktrees/{feature}-{task}/\` — created by implementer, removed by UNIFY
-- Hierarchical \`AGENTS.md\`: root + \`src/\` + \`src/{module}/\` — generated by \`/init-deep\`
+- Hierarchical \`AGENTS.md\`: root + \`src/\` + \`src/{module}/\` — generated by \`/j.init-deep\`
 `
 
 // ─── Domain INDEX.md ──────────────────────────────────────────────────────────
@@ -221,10 +316,10 @@ const DOMAIN_INDEX = `# Domain Index
 Global index of business domain documentation.
 
 Serves two purposes:
-1. **CARL lookup table** — \`carl-inject.ts\` reads \`Keywords:\` lines to match prompt words and inject the listed \`Files:\`
+1. **CARL lookup table** — \`j.carl-inject.ts\` reads \`Keywords:\` lines to match prompt words and inject the listed \`Files:\`
 2. **Planner orientation** — \`@j.planner\` reads this before interviewing to know what domain knowledge exists
 
-Run \`/init-deep\` to auto-populate from the codebase.
+Run \`/j.init-deep\` to auto-populate from the codebase.
 Update manually as you document business domains.
 
 ---
@@ -245,7 +340,7 @@ Files:
 
 ## (no domains yet)
 
-Run \`/init-deep\` to scan the codebase and generate initial domain entries.
+Run \`/j.init-deep\` to scan the codebase and generate initial domain entries.
 
 Add entries manually as you document business rules:
 
@@ -268,7 +363,7 @@ Files:
 
 const MANIFEST = `# Principles Manifest
 # CARL lookup table — maps keywords to architectural principle files.
-# Read by carl-inject.ts plugin on every UserPromptSubmit.
+# Read by j.carl-inject.ts plugin on every UserPromptSubmit.
 #
 # Format:
 #   {KEY}_STATE=active|inactive
@@ -277,7 +372,7 @@ const MANIFEST = `# Principles Manifest
 #
 # When a prompt word matches any keyword in _RECALL, the corresponding _FILE
 # is injected into the agent's context before it processes the prompt.
-# Add entries as /init-deep discovers patterns, or manually as you codify decisions.
+# Add entries as /j.init-deep discovers patterns, or manually as you codify decisions.
 
 AUTH_STATE=active
 AUTH_RECALL=auth, authentication, login, logout, session, token, jwt, oauth, clerk, middleware

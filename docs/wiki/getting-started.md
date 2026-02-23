@@ -37,7 +37,7 @@ Output esperado:
 [juninho] ✓ opencode.json patched
 
 [juninho] ✓ Framework installed successfully!
-[juninho] Open OpenCode — /plan, /spec and /implement are ready.
+[juninho] Open OpenCode — /j.plan, /j.spec and /j.implement are ready.
 ```
 
 ## Primeiro uso no OpenCode
@@ -45,7 +45,7 @@ Output esperado:
 Abra o OpenCode no projeto e experimente:
 
 ```
-/plan adicionar autenticação com email e OAuth Google
+/j.plan adicionar autenticação com email e OAuth Google
 ```
 
 O agente `@j.planner` vai:
@@ -56,7 +56,7 @@ O agente `@j.planner` vai:
 
 Depois:
 ```
-/implement
+/j.implement
 ```
 
 O `@j.implementer` executa o plano wave por wave, validando a cada etapa.
@@ -89,15 +89,15 @@ Após o setup, seu projeto terá:
 ├── skills/          ← instruções por tipo de arquivo
 ├── plugins/         ← hooks automáticos (auto-descobertos pelo OpenCode)
 ├── tools/           ← lsp, ast-grep, find-pattern, next-version
-├── commands/        ← /plan, /spec, /implement, /handoff, etc.
+├── commands/        ← /j.plan, /j.spec, /j.implement, /j.handoff, etc.
 └── state/           ← contexto persistente entre sessões
 
 AGENTS.md            ← referência rápida de todos os agentes e comandos
 opencode.json        ← patchado com definições dos agentes + MCP Context7
 docs/
-├── domain/INDEX.md  ← índice de domínio (populado por /init-deep)
+├── domain/INDEX.md  ← índice de domínio (populado por /j.init-deep)
 ├── principles/manifest ← lookup table do CARL
-└── specs/           ← specs geradas por /spec
+└── specs/           ← specs geradas por /j.spec
 worktrees/           ← para paralelização com git worktrees
 ```
 

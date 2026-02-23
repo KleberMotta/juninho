@@ -4,17 +4,17 @@ import path from "path"
 export function writePlugins(projectDir: string): void {
   const pluginsDir = path.join(projectDir, ".opencode", "plugins")
 
-  writeFileSync(path.join(pluginsDir, "env-protection.ts"), ENV_PROTECTION)
-  writeFileSync(path.join(pluginsDir, "auto-format.ts"), AUTO_FORMAT)
-  writeFileSync(path.join(pluginsDir, "plan-autoload.ts"), PLAN_AUTOLOAD)
-  writeFileSync(path.join(pluginsDir, "carl-inject.ts"), CARL_INJECT)
-  writeFileSync(path.join(pluginsDir, "skill-inject.ts"), SKILL_INJECT)
-  writeFileSync(path.join(pluginsDir, "intent-gate.ts"), INTENT_GATE)
-  writeFileSync(path.join(pluginsDir, "todo-enforcer.ts"), TODO_ENFORCER)
-  writeFileSync(path.join(pluginsDir, "comment-checker.ts"), COMMENT_CHECKER)
-  writeFileSync(path.join(pluginsDir, "hashline-read.ts"), HASHLINE_READ)
-  writeFileSync(path.join(pluginsDir, "hashline-edit.ts"), HASHLINE_EDIT)
-  writeFileSync(path.join(pluginsDir, "directory-agents-injector.ts"), DIR_AGENTS_INJECTOR)
+  writeFileSync(path.join(pluginsDir, "j.env-protection.ts"), ENV_PROTECTION)
+  writeFileSync(path.join(pluginsDir, "j.auto-format.ts"), AUTO_FORMAT)
+  writeFileSync(path.join(pluginsDir, "j.plan-autoload.ts"), PLAN_AUTOLOAD)
+  writeFileSync(path.join(pluginsDir, "j.carl-inject.ts"), CARL_INJECT)
+  writeFileSync(path.join(pluginsDir, "j.skill-inject.ts"), SKILL_INJECT)
+  writeFileSync(path.join(pluginsDir, "j.intent-gate.ts"), INTENT_GATE)
+  writeFileSync(path.join(pluginsDir, "j.todo-enforcer.ts"), TODO_ENFORCER)
+  writeFileSync(path.join(pluginsDir, "j.comment-checker.ts"), COMMENT_CHECKER)
+  writeFileSync(path.join(pluginsDir, "j.hashline-read.ts"), HASHLINE_READ)
+  writeFileSync(path.join(pluginsDir, "j.hashline-edit.ts"), HASHLINE_EDIT)
+  writeFileSync(path.join(pluginsDir, "j.directory-agents-injector.ts"), DIR_AGENTS_INJECTOR)
 }
 
 // ─── Env Protection ──────────────────────────────────────────────────────────
@@ -125,7 +125,7 @@ export default (async ({ directory }: { directory: string }) => ({
 
     output.system.push(
       \`[plan-autoload] Active plan detected at \${planPath}:\\n\\n\${planContent}\\n\\n\` +
-      \`Use /implement to execute this plan, or /plan to revise it.\`
+      \`Use /j.implement to execute this plan, or /j.plan to revise it.\`
     )
   },
 })) satisfies Plugin
@@ -285,37 +285,47 @@ const SKILL_INJECT = `import type { Plugin } from "@opencode-ai/plugin"
 import { existsSync, readFileSync } from "fs"
 import path from "path"
 
-// Injects skill instructions when agent reads a file matching a skill pattern.
-// Uses tool.execute.after on Read — appends skill to read result so agent has
-// instructions in context before writing the file.
+// Injects skill instructions BEFORE Write/Edit tool calls matching a file pattern.
+// Uses tool.execute.before on Write/Edit — ensures the agent has step-by-step
+// instructions for the artifact it is about to create, even for new files.
+// This is Tier 3 of the context architecture.
 
 const SKILL_MAP: Array<{ pattern: RegExp; skill: string }> = [
-  { pattern: /\\.test\\.(ts|tsx|js|jsx)$/, skill: "test-writing" },
-  { pattern: /app\\/.*\\/page\\.(tsx|jsx)$/, skill: "page-creation" },
-  { pattern: /app\\/api\\/.*\\.(ts|js)$/, skill: "api-route-creation" },
-  { pattern: /actions\\.(ts|js)$/, skill: "server-action-creation" },
-  { pattern: /schema\\.prisma$/, skill: "schema-migration" },
+  { pattern: /\\.test\\.(ts|tsx|js|jsx)$/, skill: "j.test-writing" },
+  { pattern: /app\\/.*\\/page\\.(tsx|jsx)$/, skill: "j.page-creation" },
+  { pattern: /app\\/api\\/.*\\.(ts|js)$/, skill: "j.api-route-creation" },
+  { pattern: /actions\\.(ts|js)$/, skill: "j.server-action-creation" },
+  { pattern: /schema\\.prisma$/, skill: "j.schema-migration" },
 ]
 
-export default (async ({ directory }: { directory: string }) => ({
-  "tool.execute.after": async (
-    input: { tool: string; sessionID: string; callID: string; args: any },
-    output: { title: string; output: string; metadata: any }
-  ) => {
-    if (input.tool !== "Read") return
+const injectedSkills = new Set<string>()
 
-    const filePath: string = input.args?.path ?? input.args?.file_path ?? ""
+export default (async ({ directory }: { directory: string }) => ({
+  "tool.execute.before": async (
+    input: { tool: string; sessionID: string; callID: string },
+    output: { args: any }
+  ) => {
+    if (!["Write", "Edit", "MultiEdit"].includes(input.tool)) return
+
+    const filePath: string = output.args?.path ?? output.args?.file_path ?? ""
     if (!filePath) return
 
     const match = SKILL_MAP.find(({ pattern }) => pattern.test(filePath))
     if (!match) return
 
+    // Inject each skill only once per session to avoid context bloat
+    const key = \`\${input.sessionID}:\${match.skill}\`
+    if (injectedSkills.has(key)) return
+    injectedSkills.add(key)
+
     const skillPath = path.join(directory, ".opencode", "skills", match.skill, "SKILL.md")
     if (!existsSync(skillPath)) return
 
     const skillContent = readFileSync(skillPath, "utf-8")
-    output.output +=
-      \`\\n\\n[skill-inject] Skill activated for \${match.skill}:\\n\\n\${skillContent}\`
+
+    // Inject skill into args metadata so the agent has instructions before writing
+    output.args._skillInjection =
+      \`[skill-inject] Skill activated for \${match.skill}:\\n\\n\${skillContent}\`
   },
 })) satisfies Plugin
 `

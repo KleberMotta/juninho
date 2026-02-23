@@ -48,23 +48,23 @@ Versionamento segue [Semantic Versioning](https://semver.org/lang/pt-BR/).
 - `@j.librarian` — agente de pesquisa externa via Context7 MCP
 
 **Plugins instalados (11)**
-- `env-protection` — bloqueia acesso a arquivos sensíveis
-- `auto-format` — formata arquivos após Write/Edit (prettier, black, gofmt, rustfmt)
-- `plan-autoload` — injeta plano ativo quando sessão fica idle
-- `carl-inject` — injeta contexto de domínio baseado em keywords do prompt
-- `skill-inject` — injeta skill instructions por padrão de path de arquivo
-- `intent-gate` — classifica intent do prompt para melhor roteamento de agente
-- `todo-enforcer` — re-injeta tasks incompletas quando sessão fica idle
-- `comment-checker` — detecta e sinaliza comentários óbvios/redundantes
-- `hashline-read` — adiciona prefixo `NNN#XX:` ao output do Read
-- `hashline-edit` — valida referências hashline antes de executar edits
+- `j.env-protection` — bloqueia acesso a arquivos sensíveis
+- `j.auto-format` — formata arquivos após Write/Edit (prettier, black, gofmt, rustfmt)
+- `j.plan-autoload` — injeta plano ativo quando sessão fica idle
+- `j.carl-inject` — injeta contexto de domínio baseado em keywords do prompt
+- `j.skill-inject` — injeta skill instructions por padrão de path de arquivo
+- `j.intent-gate` — classifica intent do prompt para melhor roteamento de agente
+- `j.todo-enforcer` — re-injeta tasks incompletas quando sessão fica idle
+- `j.comment-checker` — detecta e sinaliza comentários óbvios/redundantes
+- `j.hashline-read` — adiciona prefixo `NNN#XX:` ao output do Read
+- `j.hashline-edit` — valida referências hashline antes de executar edits
 
 **Skills instaladas (5)**
-- `test-writing` — padrões AAA, cobertura, mocking, naming conventions
-- `page-creation` — Next.js App Router, Server vs Client Components, loading/error states
-- `api-route-creation` — route handlers, auth check, validação Zod, error handling
-- `server-action-creation` — `"use server"`, ActionResult type, revalidação
-- `schema-migration` — Prisma schema seguro, additive changes, migration naming
+- `j.test-writing` — padrões AAA, cobertura, mocking, naming conventions
+- `j.page-creation` — Next.js App Router, Server vs Client Components, loading/error states
+- `j.api-route-creation` — route handlers, auth check, validação Zod, error handling
+- `j.server-action-creation` — `"use server"`, ActionResult type, revalidação
+- `j.schema-migration` — Prisma schema seguro, additive changes, migration naming
 
 **Ferramentas instaladas (4)**
 - `find_pattern` — busca padrões canônicos no codebase ou no manifest
@@ -73,19 +73,19 @@ Versionamento segue [Semantic Versioning](https://semver.org/lang/pt-BR/).
 - `ast_grep_search` / `ast_grep_replace` — busca e substituição estrutural por AST
 
 **Slash commands (13)**
-- `/plan` — invoca @j.planner
-- `/spec` — invoca @j.spec-writer
-- `/implement` — invoca @j.implementer
-- `/init-deep` — exploração profunda do codebase para popular docs de domínio
-- `/start-work` — inicializa contexto de sessão focada
-- `/handoff` — prepara documentação de handoff fim de sessão
-- `/ulw-loop` — modo ultra work, máximo paralelismo
-- `/check` — quality gates completos (tsc + eslint + jest)
-- `/lint` — apenas o linter
-- `/test` — apenas a suite de testes
-- `/pr-review` — invoca @j.reviewer para revisão advisory
-- `/status` — resumo do execution-state.md
-- `/unify` — invoca @j.unify para fechar o loop
+- `/j.plan` — invoca @j.planner
+- `/j.spec` — invoca @j.spec-writer
+- `/j.implement` — invoca @j.implementer
+- `/j.init-deep` — exploração profunda do codebase para popular docs de domínio
+- `/j.start-work` — inicializa contexto de sessão focada
+- `/j.handoff` — prepara documentação de handoff fim de sessão
+- `/j.ulw-loop` — modo ultra work, máximo paralelismo
+- `/j.check` — quality gates completos (tsc + eslint + jest)
+- `/j.lint` — apenas o linter
+- `/j.test` — apenas a suite de testes
+- `/j.pr-review` — invoca @j.reviewer para revisão advisory
+- `/j.status` — resumo do execution-state.md
+- `/j.unify` — invoca @j.unify para fechar o loop
 
 **Docs scaffold**
 - `AGENTS.md` — referência rápida na raiz do projeto

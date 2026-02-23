@@ -4,22 +4,22 @@ Comandos slash em `.opencode/commands/` aparecem no autocomplete do OpenCode.
 
 ---
 
-## /plan
+## /j.plan
 
 **Invoca:** `@j.planner`
 
 Transforma um objetivo em um `plan.md` executável.
 
 ```
-/plan <objetivo>
+/j.plan <objetivo>
 ```
 
 **Exemplos:**
 ```
-/plan adicionar autenticação com Clerk
-/plan corrigir bug de N+1 queries na listagem de pets
-/plan migrar de REST para tRPC
-/plan refatorar o service layer para repository pattern
+/j.plan adicionar autenticação com Clerk
+/j.plan corrigir bug de N+1 queries na listagem de pets
+/j.plan migrar de REST para tRPC
+/j.plan refatorar o service layer para repository pattern
 ```
 
 **Output:**
@@ -29,65 +29,65 @@ Transforma um objetivo em um `plan.md` executável.
 
 ---
 
-## /spec
+## /j.spec
 
 **Invoca:** `@j.spec-writer`
 
 Conduz uma entrevista estruturada de 5 fases e produz uma spec detalhada.
 
 ```
-/spec <nome ou descrição da feature>
+/j.spec <nome ou descrição da feature>
 ```
 
 **Exemplos:**
 ```
-/spec sistema de agendamentos com recorrência
-/spec dashboard de métricas em tempo real
-/spec integração com WhatsApp Business API
+/j.spec sistema de agendamentos com recorrência
+/j.spec dashboard de métricas em tempo real
+/j.spec integração com WhatsApp Business API
 ```
 
 **Quando usar:** features complexas onde ambiguidade de requisitos é um risco real.
-**Quando não usar:** bugs, refactors, features triviais — vá direto para `/plan`.
+**Quando não usar:** bugs, refactors, features triviais — vá direto para `/j.plan`.
 
 **Output:** `docs/specs/{feature-name}.md`
 
 ---
 
-## /implement
+## /j.implement
 
 **Invoca:** `@j.implementer`
 
 Executa o plano ativo (ou spec especificada) wave por wave.
 
 ```
-/implement
-/implement <task específica>
-/implement docs/specs/feature.md
+/j.implement
+/j.implement <task específica>
+/j.implement docs/specs/feature.md
 ```
 
 **Exemplos:**
 ```
-/implement
-/implement a camada de serviço
-/implement docs/specs/pagamentos.md
+/j.implement
+/j.implement a camada de serviço
+/j.implement docs/specs/pagamentos.md
 ```
 
 **O agente:**
-1. Lê o `plan.md` ativo (injetado pelo plugin `plan-autoload`)
+1. Lê o `plan.md` ativo (injetado pelo plugin `j.plan-autoload`)
 2. Executa wave por wave com validação em cada etapa
 3. Spawna `@j.validator` se há spec correspondente
 4. Atualiza `execution-state.md` com progresso
 
 ---
 
-## /init-deep
+## /j.init-deep
 
 **Invoca:** exploração profunda do codebase
 
 Escaneia todo o codebase e gera documentação de domínio.
 
 ```
-/init-deep
+/j.init-deep
 ```
 
 **Popula:**
@@ -103,36 +103,36 @@ Escaneia todo o codebase e gera documentação de domínio.
 
 ---
 
-## /start-work
+## /j.start-work
 
 Inicializa o contexto para uma sessão de trabalho focada.
 
 ```
-/start-work <descrição da task ou número do issue>
+/j.start-work <descrição da task ou número do issue>
 ```
 
 **Exemplos:**
 ```
-/start-work issue #42 — corrigir cálculo de comissão
-/start-work implementar sistema de notificações push
-/start-work #123
+/j.start-work issue #42 — corrigir cálculo de comissão
+/j.start-work implementar sistema de notificações push
+/j.start-work #123
 ```
 
 **O que faz:**
 1. Carrega `docs/domain/INDEX.md` para contexto de domínio
 2. Verifica `execution-state.md` por work em andamento
 3. Se há `plan.md` ativo: apresenta próximos passos
-4. Se não há plano: sugere `/plan` primeiro ou `/implement` direto
+4. Se não há plano: sugere `/j.plan` primeiro ou `/j.implement` direto
 5. Inicializa `execution-state.md` com a task atual
 
 ---
 
-## /handoff
+## /j.handoff
 
 Prepara documentação de handoff no final de uma sessão.
 
 ```
-/handoff
+/j.handoff
 ```
 
 **Gera em `execution-state.md`:**
@@ -157,23 +157,23 @@ Continuar os testes de integração em pagamentos.test.ts —
 próximo caso: webhook de pagamento confirmado
 ```
 
-**Uso:** sempre rode `/handoff` antes de fechar o OpenCode em sessões longas.
+**Uso:** sempre rode `/j.handoff` antes de fechar o OpenCode em sessões longas.
 
 ---
 
-## /ulw-loop
+## /j.ulw-loop
 
 **Ultra Work Loop** — máximo paralelismo até completar todas as tasks.
 
 ```
-/ulw-loop
-/ulw-loop <objetivo ou task list>
+/j.ulw-loop
+/j.ulw-loop <objetivo ou task list>
 ```
 
 **Exemplos:**
 ```
-/ulw-loop
-/ulw-loop implementar todas as features do sprint 3
+/j.ulw-loop
+/j.ulw-loop implementar todas as features do sprint 3
 ```
 
 **Modelo de execução:**
@@ -195,12 +195,12 @@ Wave 3:
 
 ---
 
-## /check
+## /j.check
 
 Roda todos os quality gates em sequência: TypeScript, linter e testes.
 
 ```
-/check
+/j.check
 ```
 
 **Equivalente a:**
@@ -212,12 +212,12 @@ tsc --noEmit && eslint . --max-warnings=0 && jest --passWithNoTests
 
 ---
 
-## /lint
+## /j.lint
 
 Roda apenas o linter.
 
 ```
-/lint
+/j.lint
 ```
 
 **Equivalente a:**
@@ -229,12 +229,12 @@ eslint . --max-warnings=0
 
 ---
 
-## /test
+## /j.test
 
 Roda apenas a suite de testes.
 
 ```
-/test
+/j.test
 ```
 
 **Equivalente a:**
@@ -246,14 +246,14 @@ jest --passWithNoTests
 
 ---
 
-## /pr-review
+## /j.pr-review
 
 **Invoca:** `@j.reviewer`
 
 Revisão advisory do diff atual — analisa o que mudou desde a última branch base.
 
 ```
-/pr-review
+/j.pr-review
 ```
 
 **O que faz:**
@@ -265,12 +265,12 @@ Revisão advisory do diff atual — analisa o que mudou desde a última branch b
 
 ---
 
-## /status
+## /j.status
 
 Exibe um resumo do `execution-state.md` atual.
 
 ```
-/status
+/j.status
 ```
 
 **Output:**
@@ -293,24 +293,24 @@ Exibe um resumo do `execution-state.md` atual.
 
 ---
 
-## /unify
+## /j.unify
 
 **Invoca:** `@j.unify`
 
 Fecha o loop após implementação: reconcilia worktrees, documenta e cria o PR.
 
 ```
-/unify
+/j.unify
 ```
 
 **Protocolo:**
 1. Verifica completude de cada task em `plan.md`
 2. Atualiza `docs/domain/INDEX.md` com novas entidades/padrões
-3. Merge de worktrees paralelas (se usadas no `/ulw-loop`)
+3. Merge de worktrees paralelas (se usadas no `/j.ulw-loop`)
 4. Cria PR via `gh pr create` com body gerado da spec
 5. Limpa estado: remove `.plan-ready`, arquiva `plan.md`, reseta `execution-state.md`
 
-**Diferença em relação ao `/handoff`:** `/handoff` documenta o estado para a próxima sessão; `/unify` finaliza a feature e cria o PR.
+**Diferença em relação ao `/j.handoff`:** `/j.handoff` documenta o estado para a próxima sessão; `/j.unify` finaliza a feature e cria o PR.
 
 ---
 
@@ -318,16 +318,16 @@ Fecha o loop após implementação: reconcilia worktrees, documenta e cria o PR.
 
 | Comando | Agente | Quando usar |
 |---------|--------|-------------|
-| `/plan` | @j.planner | Qualquer task não trivial |
-| `/spec` | @j.spec-writer | Features complexas com requisitos ambíguos |
-| `/implement` | @j.implementer | Após ter um plano |
-| `/init-deep` | (exploração) | Setup inicial ou pós-refactor |
-| `/start-work` | — | Início de sessão focada |
-| `/handoff` | — | Fim de sessão longa |
-| `/ulw-loop` | @j.implementer × N | Múltiplas tasks independentes |
-| `/check` | — | Quality gates completos (tsc + eslint + jest) |
-| `/lint` | — | Apenas o linter |
-| `/test` | — | Apenas a suite de testes |
-| `/pr-review` | @j.reviewer | Revisão advisory do diff atual |
-| `/status` | — | Resumo do execution-state.md |
-| `/unify` | @j.unify | Fechar o loop: merge + PR |
+| `/j.plan` | @j.planner | Qualquer task não trivial |
+| `/j.spec` | @j.spec-writer | Features complexas com requisitos ambíguos |
+| `/j.implement` | @j.implementer | Após ter um plano |
+| `/j.init-deep` | (exploração) | Setup inicial ou pós-refactor |
+| `/j.start-work` | — | Início de sessão focada |
+| `/j.handoff` | — | Fim de sessão longa |
+| `/j.ulw-loop` | @j.implementer × N | Múltiplas tasks independentes |
+| `/j.check` | — | Quality gates completos (tsc + eslint + jest) |
+| `/j.lint` | — | Apenas o linter |
+| `/j.test` | — | Apenas a suite de testes |
+| `/j.pr-review` | @j.reviewer | Revisão advisory do diff atual |
+| `/j.status` | — | Resumo do execution-state.md |
+| `/j.unify` | @j.unify | Fechar o loop: merge + PR |

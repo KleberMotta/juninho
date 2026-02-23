@@ -4,17 +4,17 @@ import path from "path"
 export function writeSkills(projectDir: string): void {
   const skillsDir = path.join(projectDir, ".opencode", "skills")
 
-  writeFileSync(path.join(skillsDir, "test-writing", "SKILL.md"), TEST_WRITING)
-  writeFileSync(path.join(skillsDir, "page-creation", "SKILL.md"), PAGE_CREATION)
-  writeFileSync(path.join(skillsDir, "api-route-creation", "SKILL.md"), API_ROUTE_CREATION)
-  writeFileSync(path.join(skillsDir, "server-action-creation", "SKILL.md"), SERVER_ACTION_CREATION)
-  writeFileSync(path.join(skillsDir, "schema-migration", "SKILL.md"), SCHEMA_MIGRATION)
+  writeFileSync(path.join(skillsDir, "j.test-writing", "SKILL.md"), TEST_WRITING)
+  writeFileSync(path.join(skillsDir, "j.page-creation", "SKILL.md"), PAGE_CREATION)
+  writeFileSync(path.join(skillsDir, "j.api-route-creation", "SKILL.md"), API_ROUTE_CREATION)
+  writeFileSync(path.join(skillsDir, "j.server-action-creation", "SKILL.md"), SERVER_ACTION_CREATION)
+  writeFileSync(path.join(skillsDir, "j.schema-migration", "SKILL.md"), SCHEMA_MIGRATION)
 }
 
 // ─── Test Writing ────────────────────────────────────────────────────────────
 
 const TEST_WRITING = `---
-name: test-writing
+name: j.test-writing
 description: Write unit and integration tests following project conventions
 # Optional: uncomment to enable Playwright MCP for E2E tests
 # mcp:
@@ -93,7 +93,7 @@ it("should handle async operation", async () => {
 // ─── Page Creation ────────────────────────────────────────────────────────────
 
 const PAGE_CREATION = `---
-name: page-creation
+name: j.page-creation
 description: Create Next.js App Router pages with correct patterns
 ---
 
@@ -173,7 +173,7 @@ Always create companion files:
 // ─── API Route Creation ───────────────────────────────────────────────────────
 
 const API_ROUTE_CREATION = `---
-name: api-route-creation
+name: j.api-route-creation
 description: Create Next.js App Router API routes with correct patterns
 ---
 
@@ -269,7 +269,7 @@ const CreateSchema = z.object({
 // ─── Server Action Creation ───────────────────────────────────────────────────
 
 const SERVER_ACTION_CREATION = `---
-name: server-action-creation
+name: j.server-action-creation
 description: Create Next.js Server Actions with correct patterns
 ---
 
@@ -358,7 +358,7 @@ export function ExampleForm() {
 // ─── Schema Migration ─────────────────────────────────────────────────────────
 
 const SCHEMA_MIGRATION = `---
-name: schema-migration
+name: j.schema-migration
 description: Modify Prisma schema and create migrations safely
 ---
 

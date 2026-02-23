@@ -64,22 +64,22 @@ const AGENTS = [
 ]
 
 const PLUGINS = [
-  "env-protection", "auto-format", "plan-autoload", "carl-inject",
-  "skill-inject", "intent-gate", "todo-enforcer", "comment-checker",
-  "hashline-read", "hashline-edit", "directory-agents-injector",
+  "j.env-protection", "j.auto-format", "j.plan-autoload", "j.carl-inject",
+  "j.skill-inject", "j.intent-gate", "j.todo-enforcer", "j.comment-checker",
+  "j.hashline-read", "j.hashline-edit", "j.directory-agents-injector",
 ]
 
 const COMMANDS = [
-  "plan", "spec", "implement", "init-deep", "start-work",
-  "handoff", "ulw-loop", "check", "lint", "test",
-  "pr-review", "status", "unify",
+  "j.plan", "j.spec", "j.implement", "j.init-deep", "j.start-work",
+  "j.handoff", "j.ulw-loop", "j.check", "j.lint", "j.test",
+  "j.pr-review", "j.status", "j.unify",
 ]
 
 const TOOLS = ["find-pattern", "next-version", "lsp", "ast-grep"]
 
 const SKILLS = [
-  "test-writing", "page-creation", "api-route-creation",
-  "server-action-creation", "schema-migration",
+  "j.test-writing", "j.page-creation", "j.api-route-creation",
+  "j.server-action-creation", "j.schema-migration",
 ]
 
 // ─── Setup ────────────────────────────────────────────────────────────────────
@@ -228,17 +228,17 @@ test("Installation", "Idempotency: second run skips re-install", () => {
 // ─── Group 2: Plugin Structure (22 tests) ─────────────────────────────────────
 
 const PLUGIN_HOOKS: Record<string, string> = {
-  "env-protection": "tool.execute.before",
-  "auto-format": "tool.execute.after",
-  "plan-autoload": "experimental.chat.system.transform",
-  "carl-inject": "chat.message",
-  "skill-inject": "tool.execute.after",
-  "intent-gate": "chat.message",
-  "todo-enforcer": "experimental.chat.system.transform",
-  "comment-checker": "tool.execute.after",
-  "hashline-read": "tool.execute.after",
-  "hashline-edit": "tool.execute.before",
-  "directory-agents-injector": "tool.execute.after",
+  "j.env-protection": "tool.execute.before",
+  "j.auto-format": "tool.execute.after",
+  "j.plan-autoload": "experimental.chat.system.transform",
+  "j.carl-inject": "chat.message",
+  "j.skill-inject": "tool.execute.before",
+  "j.intent-gate": "chat.message",
+  "j.todo-enforcer": "experimental.chat.system.transform",
+  "j.comment-checker": "tool.execute.after",
+  "j.hashline-read": "tool.execute.after",
+  "j.hashline-edit": "tool.execute.before",
+  "j.directory-agents-injector": "tool.execute.after",
 }
 
 for (const [plugin, hook] of Object.entries(PLUGIN_HOOKS)) {
@@ -261,21 +261,21 @@ for (const [plugin, hook] of Object.entries(PLUGIN_HOOKS)) {
 
 // env-protection (3)
 test("Plugin Logic", "env-protection: SENSITIVE array contains .env pattern", () => {
-  const content = readPlugin("env-protection")
+  const content = readPlugin("j.env-protection")
   return content.includes("SENSITIVE") && /\\\.env/.test(content)
     ? true
     : "SENSITIVE array or .env regex pattern not found"
 })
 
 test("Plugin Logic", "env-protection: SENSITIVE array contains secret/credential", () => {
-  const content = readPlugin("env-protection")
+  const content = readPlugin("j.env-protection")
   return content.includes("secret") && content.includes("credential")
     ? true
     : "secret or credential patterns not found in env-protection"
 })
 
 test("Plugin Logic", "env-protection: guards with .some() check before throwing", () => {
-  const content = readPlugin("env-protection")
+  const content = readPlugin("j.env-protection")
   return content.includes("SENSITIVE.some") && content.includes("throw new Error")
     ? true
     : "SENSITIVE.some() or throw new Error not found"
@@ -283,14 +283,14 @@ test("Plugin Logic", "env-protection: guards with .some() check before throwing"
 
 // hashline-read (3)
 test("Plugin Logic", "hashline-read: uses MD5 for hashing", () => {
-  const content = readPlugin("hashline-read")
+  const content = readPlugin("j.hashline-read")
   return content.includes('"md5"')
     ? true
     : 'MD5 ("md5") not found in hashline-read'
 })
 
 test("Plugin Logic", "hashline-read: pads line number to 3 digits", () => {
-  const content = readPlugin("hashline-read")
+  const content = readPlugin("j.hashline-read")
   return content.includes('padStart(3, "0")')
     ? true
     : 'padStart(3, "0") not found in hashline-read'
@@ -316,14 +316,14 @@ test("Plugin Logic", "carl-inject: generated manifest has AUTH_STATE=active", ()
 })
 
 test("Plugin Logic", "carl-inject: parsePrinciplesManifest function present", () => {
-  const content = readPlugin("carl-inject")
+  const content = readPlugin("j.carl-inject")
   return content.includes("parsePrinciplesManifest")
     ? true
     : "parsePrinciplesManifest function not found in carl-inject"
 })
 
 test("Plugin Logic", "carl-inject: filters by promptWords set before injecting", () => {
-  const content = readPlugin("carl-inject")
+  const content = readPlugin("j.carl-inject")
   return content.includes("promptWords")
     ? true
     : "promptWords keyword filtering not found in carl-inject"
@@ -331,21 +331,21 @@ test("Plugin Logic", "carl-inject: filters by promptWords set before injecting",
 
 // skill-inject (3)
 test("Plugin Logic", "skill-inject: maps page.tsx pattern to page-creation skill", () => {
-  const content = readPlugin("skill-inject")
-  return content.includes("page-creation") && content.includes("page")
+  const content = readPlugin("j.skill-inject")
+  return content.includes("j.page-creation") && content.includes("page")
     ? true
     : "page-creation skill mapping not found"
 })
 
 test("Plugin Logic", "skill-inject: maps app/api pattern to api-route-creation skill", () => {
-  const content = readPlugin("skill-inject")
-  return content.includes("api-route-creation") && content.includes("api")
+  const content = readPlugin("j.skill-inject")
+  return content.includes("j.api-route-creation") && content.includes("api")
     ? true
     : "api-route-creation skill mapping not found"
 })
 
 test("Plugin Logic", "skill-inject: returns early when no skill pattern matches", () => {
-  const content = readPlugin("skill-inject")
+  const content = readPlugin("j.skill-inject")
   return content.includes("if (!match)")
     ? true
     : "early-return guard (if (!match)) not found in skill-inject"
@@ -353,21 +353,21 @@ test("Plugin Logic", "skill-inject: returns early when no skill pattern matches"
 
 // plan-autoload (3)
 test("Plugin Logic", "plan-autoload: reads .plan-ready flag file", () => {
-  const content = readPlugin("plan-autoload")
+  const content = readPlugin("j.plan-autoload")
   return content.includes(".plan-ready")
     ? true
     : ".plan-ready reference not found in plan-autoload"
 })
 
 test("Plugin Logic", "plan-autoload: deletes flag with unlinkSync (fire-once)", () => {
-  const content = readPlugin("plan-autoload")
+  const content = readPlugin("j.plan-autoload")
   return content.includes("unlinkSync")
     ? true
     : "unlinkSync (fire-once delete) not found in plan-autoload"
 })
 
 test("Plugin Logic", "plan-autoload: pushes plan content to output.system", () => {
-  const content = readPlugin("plan-autoload")
+  const content = readPlugin("j.plan-autoload")
   return content.includes("output.system.push")
     ? true
     : "output.system.push not found in plan-autoload"
@@ -375,21 +375,21 @@ test("Plugin Logic", "plan-autoload: pushes plan content to output.system", () =
 
 // todo-enforcer (3)
 test("Plugin Logic", "todo-enforcer: reads execution-state.md for todos", () => {
-  const content = readPlugin("todo-enforcer")
+  const content = readPlugin("j.todo-enforcer")
   return content.includes("execution-state.md")
     ? true
     : "execution-state.md reference not found in todo-enforcer"
 })
 
 test("Plugin Logic", "todo-enforcer: pushes incomplete items to output.system", () => {
-  const content = readPlugin("todo-enforcer")
+  const content = readPlugin("j.todo-enforcer")
   return content.includes("output.system.push")
     ? true
     : "output.system.push not found in todo-enforcer"
 })
 
 test("Plugin Logic", "todo-enforcer: returns early when no incomplete items", () => {
-  const content = readPlugin("todo-enforcer")
+  const content = readPlugin("j.todo-enforcer")
   return content.includes("if (incomplete.length === 0)")
     ? true
     : "early-return guard (if (incomplete.length === 0)) not found in todo-enforcer"
@@ -399,10 +399,12 @@ test("Plugin Logic", "todo-enforcer: returns early when no incomplete items", ()
 
 const cfg = JSON.parse(readFileSync(path.join(testDir, "opencode.json"), "utf-8"))
 
-test("Agent Config", "j.planner: model=anthropic/claude-opus-4-6", () =>
-  cfg.agent?.["j.planner"]?.model === "anthropic/claude-opus-4-6"
+test("Agent Config", "j.planner: model matches juninho-config strong tier", () => {
+  const configData = JSON.parse(readFileSync(path.join(testDir, ".opencode", "juninho-config.json"), "utf-8"))
+  return cfg.agent?.["j.planner"]?.model === configData.strong
     ? true
-    : `Expected anthropic/claude-opus-4-6, got: ${cfg.agent?.["j.planner"]?.model}`)
+    : `Expected ${configData.strong}, got: ${cfg.agent?.["j.planner"]?.model}`
+})
 
 test("Agent Config", "j.planner: task+bash+write allowed, edit denied", () => {
   const p = cfg.agent?.["j.planner"]?.permission
@@ -495,50 +497,50 @@ for (const skill of SKILLS) {
 }
 
 test("Skills", "test-writing: Playwright MCP commented in frontmatter", () =>
-  readSkill("test-writing").includes("# mcp:")
+  readSkill("j.test-writing").includes("# mcp:")
     ? true
     : "# mcp: comment not found in test-writing/SKILL.md")
 
 // ─── Group 7: Commands (13 tests) ────────────────────────────────────────────
 
 test("Commands", "plan.md references @j.planner", () =>
-  readCmd("plan").includes("@j.planner"))
+  readCmd("j.plan").includes("@j.planner"))
 
 test("Commands", "spec.md references @j.spec-writer", () =>
-  readCmd("spec").includes("@j.spec-writer"))
+  readCmd("j.spec").includes("@j.spec-writer"))
 
 test("Commands", "implement.md references @j.implementer", () =>
-  readCmd("implement").includes("@j.implementer"))
+  readCmd("j.implement").includes("@j.implementer"))
 
 test("Commands", "unify.md references @j.unify", () =>
-  readCmd("unify").includes("@j.unify"))
+  readCmd("j.unify").includes("@j.unify"))
 
 test("Commands", "pr-review.md references @j.reviewer", () =>
-  readCmd("pr-review").includes("@j.reviewer"))
+  readCmd("j.pr-review").includes("@j.reviewer"))
 
 test("Commands", "check.md references pre-commit", () =>
-  readCmd("check").includes("pre-commit"))
+  readCmd("j.check").includes("pre-commit"))
 
 test("Commands", "lint.md references eslint", () =>
-  readCmd("lint").toLowerCase().includes("eslint"))
+  readCmd("j.lint").toLowerCase().includes("eslint"))
 
 test("Commands", "test.md references jest", () =>
-  readCmd("test").toLowerCase().includes("jest"))
+  readCmd("j.test").toLowerCase().includes("jest"))
 
 test("Commands", "status.md references execution-state.md", () =>
-  readCmd("status").includes("execution-state.md"))
+  readCmd("j.status").includes("execution-state.md"))
 
 test("Commands", "init-deep.md references AGENTS.md", () =>
-  readCmd("init-deep").includes("AGENTS.md"))
+  readCmd("j.init-deep").includes("AGENTS.md"))
 
 test("Commands", "start-work.md references execution-state.md", () =>
-  readCmd("start-work").includes("execution-state.md"))
+  readCmd("j.start-work").includes("execution-state.md"))
 
 test("Commands", "handoff.md references execution-state.md", () =>
-  readCmd("handoff").includes("execution-state.md"))
+  readCmd("j.handoff").includes("execution-state.md"))
 
 test("Commands", "ulw-loop.md references @j.implementer", () =>
-  readCmd("ulw-loop").includes("@j.implementer"))
+  readCmd("j.ulw-loop").includes("@j.implementer"))
 
 // ─── Group 8: Docs/Config (8 tests) ──────────────────────────────────────────
 
@@ -601,11 +603,76 @@ test("Dirs", "docs/specs/ exists", () =>
 test("Dirs", ".opencode/state/ exists", () =>
   existsSync(path.join(testDir, ".opencode", "state")))
 
-test("Dirs", ".opencode/skills/test-writing/ exists", () =>
-  existsSync(path.join(testDir, ".opencode", "skills", "test-writing")))
+test("Dirs", ".opencode/skills/j.test-writing/ exists", () =>
+  existsSync(path.join(testDir, ".opencode", "skills", "j.test-writing")))
 
 test("Dirs", "docs/domain/ exists", () =>
   existsSync(path.join(testDir, "docs", "domain")))
+
+// ─── Group 10: Model Config (8 tests) ─────────────────────────────────────────
+
+test("Model Config", "juninho-config.json exists after setup", () =>
+  existsSync(path.join(testDir, ".opencode", "juninho-config.json")))
+
+test("Model Config", "juninho-config.json has strong/medium/weak keys", () => {
+  const configData = JSON.parse(readFileSync(path.join(testDir, ".opencode", "juninho-config.json"), "utf-8"))
+  return configData.strong && configData.medium && configData.weak
+    ? true
+    : `Missing keys: ${JSON.stringify(configData)}`
+})
+
+test("Model Config", "juninho-config.json strong contains opus or is a valid model", () => {
+  const configData = JSON.parse(readFileSync(path.join(testDir, ".opencode", "juninho-config.json"), "utf-8"))
+  return typeof configData.strong === "string" && configData.strong.length > 0
+    ? true
+    : `Expected non-empty strong model, got: ${configData.strong}`
+})
+
+test("Model Config", "Agent frontmatter model matches config", () => {
+  const configData = JSON.parse(readFileSync(path.join(testDir, ".opencode", "juninho-config.json"), "utf-8"))
+  const plannerMd = readFileSync(agentPath("j.planner"), "utf-8")
+  const modelMatch = plannerMd.match(/^model:\s*(.+)$/m)
+  return modelMatch && modelMatch[1] === configData.strong
+    ? true
+    : `Frontmatter model (${modelMatch?.[1]}) doesn't match config (${configData.strong})`
+})
+
+test("Model Config", "opencode.json agent models match config tiers", () => {
+  const configData = JSON.parse(readFileSync(path.join(testDir, ".opencode", "juninho-config.json"), "utf-8"))
+  const opencodeJson = JSON.parse(readFileSync(path.join(testDir, "opencode.json"), "utf-8"))
+  const plannerModel = opencodeJson.agent?.["j.planner"]?.model
+  const exploreModel = opencodeJson.agent?.["j.explore"]?.model
+  const implModel = opencodeJson.agent?.["j.implementer"]?.model
+  const ok = plannerModel === configData.strong && exploreModel === configData.weak && implModel === configData.medium
+  return ok
+    ? true
+    : `Model mismatch: planner=${plannerModel}, implementer=${implModel}, explore=${exploreModel}`
+})
+
+test("Model Config", "j.explore frontmatter uses weak model", () => {
+  const configData = JSON.parse(readFileSync(path.join(testDir, ".opencode", "juninho-config.json"), "utf-8"))
+  const exploreMd = readFileSync(agentPath("j.explore"), "utf-8")
+  const modelMatch = exploreMd.match(/^model:\s*(.+)$/m)
+  return modelMatch && modelMatch[1] === configData.weak
+    ? true
+    : `Explore frontmatter model (${modelMatch?.[1]}) doesn't match config weak (${configData.weak})`
+})
+
+test("Model Config", "j.implementer frontmatter uses medium model", () => {
+  const configData = JSON.parse(readFileSync(path.join(testDir, ".opencode", "juninho-config.json"), "utf-8"))
+  const implMd = readFileSync(agentPath("j.implementer"), "utf-8")
+  const modelMatch = implMd.match(/^model:\s*(.+)$/m)
+  return modelMatch && modelMatch[1] === configData.medium
+    ? true
+    : `Implementer frontmatter model (${modelMatch?.[1]}) doesn't match config medium (${configData.medium})`
+})
+
+test("Model Config", "CLI shows help when called without arguments", () => {
+  const out = execSync(`node "${CLI_PATH}"`, { encoding: "utf-8" })
+  return out.includes("config") && out.includes("setup") && out.includes("Model Tiers")
+    ? true
+    : `Expected help output with config/setup/Model Tiers, got: ${out.slice(0, 200)}`
+})
 
 // ─── Report Generator ─────────────────────────────────────────────────────────
 

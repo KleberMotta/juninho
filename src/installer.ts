@@ -7,6 +7,7 @@ import { writeTools } from "./templates/tools.js"
 import { writeCommands } from "./templates/commands.js"
 import { writeState } from "./templates/state.js"
 import { writeDocs, patchOpencodeJson } from "./templates/docs.js"
+import { resolveModels, saveConfig } from "./config.js"
 
 export interface SetupOptions {
   force?: boolean
@@ -23,12 +24,23 @@ export async function runSetup(projectDir: string, options: SetupOptions = {}): 
   console.log("[juninho] Installing Agentic Coding Framework...")
   console.log(`[juninho] Target: ${projectDir}`)
 
+  // Step 0: Resolve models (config → discovery → defaults)
+  const models = resolveModels(projectDir)
+  console.log("[juninho] ✓ Models resolved")
+  console.log(`[juninho]   Strong: ${models.strong}`)
+  console.log(`[juninho]   Medium: ${models.medium}`)
+  console.log(`[juninho]   Weak:   ${models.weak}`)
+
   // Step 1: Create directory structure
   createDirectories(projectDir)
   console.log("[juninho] ✓ Directories created")
 
-  // Step 2: Write agents
-  writeAgents(projectDir)
+  // Step 2: Save model config
+  saveConfig(projectDir, models)
+  console.log("[juninho] ✓ Model config saved")
+
+  // Step 3: Write agents (with resolved models)
+  writeAgents(projectDir, models)
   console.log("[juninho] ✓ Agents created (9)")
 
   // Step 3: Write skills
@@ -55,8 +67,8 @@ export async function runSetup(projectDir: string, options: SetupOptions = {}): 
   writeDocs(projectDir)
   console.log("[juninho] ✓ Docs scaffold created")
 
-  // Step 9: Patch opencode.json
-  patchOpencodeJson(projectDir)
+  // Step 9: Patch opencode.json (with resolved models)
+  patchOpencodeJson(projectDir, models)
   console.log("[juninho] ✓ opencode.json patched")
 
   // Step 10: Install pre-commit hook (outer validation loop)
@@ -67,7 +79,7 @@ export async function runSetup(projectDir: string, options: SetupOptions = {}): 
 
   console.log("")
   console.log("[juninho] ✓ Framework installed successfully!")
-  console.log("[juninho] Open OpenCode — /plan, /spec and /implement are ready.")
+  console.log("[juninho] Open OpenCode — /j.plan, /j.spec and /j.implement are ready.")
   console.log("[juninho] Agents: @j.planner, @j.spec-writer, @j.implementer, @j.validator, @j.reviewer, @j.unify, @j.explore, @j.librarian")
 }
 
@@ -123,11 +135,11 @@ function createDirectories(projectDir: string): void {
     ".opencode",
     ".opencode/agents",
     ".opencode/skills",
-    ".opencode/skills/test-writing",
-    ".opencode/skills/page-creation",
-    ".opencode/skills/api-route-creation",
-    ".opencode/skills/server-action-creation",
-    ".opencode/skills/schema-migration",
+    ".opencode/skills/j.test-writing",
+    ".opencode/skills/j.page-creation",
+    ".opencode/skills/j.api-route-creation",
+    ".opencode/skills/j.server-action-creation",
+    ".opencode/skills/j.schema-migration",
     ".opencode/plugins",
     ".opencode/tools",
     ".opencode/commands",

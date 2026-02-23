@@ -30,25 +30,25 @@ juninho setup
 
 Depois disso, o OpenCode no seu projeto terá:
 - **9 agentes especializados** com protocolos definidos (j.planner, j.spec-writer, j.implementer, j.validator, j.reviewer, j.plan-reviewer, j.unify, j.explore, j.librarian)
-- **11 plugins** que rodam automaticamente como hooks (env-protection, auto-format, carl-inject, skill-inject, hashline-read/edit, directory-agents-injector, ...)
+- **11 plugins** que rodam automaticamente como hooks (j.env-protection, j.auto-format, j.carl-inject, j.skill-inject, j.hashline-read/edit, j.directory-agents-injector, ...)
 - **5 skills** que injetam instruções por tipo de arquivo (tests, pages, API routes, actions, migrations)
 - **4 ferramentas** (lsp, ast-grep, find-pattern, next-version)
-- **13 slash commands** (/plan, /spec, /implement, /init-deep, /start-work, /handoff, /ulw-loop, /check, /lint, /test, /pr-review, /status, /unify)
+- **13 slash commands** (/j.plan, /j.spec, /j.implement, /j.init-deep, /j.start-work, /j.handoff, /j.ulw-loop, /j.check, /j.lint, /j.test, /j.pr-review, /j.status, /j.unify)
 
 ---
 
 ## Fluxo resumido
 
 ```
-/plan objetivo    →  plan.md aprovado
-/implement        →  wave 1 → wave 2 → wave 3 → @j.validator → @j.unify → PR
+/j.plan objetivo    →  plan.md aprovado
+/j.implement        →  wave 1 → wave 2 → wave 3 → @j.validator → @j.unify → PR
 ```
 
 Para features complexas:
 ```
-/spec feature     →  docs/specs/feature.md
-/plan             →  plan.md baseado na spec
-/implement        →  execução com validação automática contra a spec
+/j.spec feature     →  docs/specs/feature.md
+/j.plan             →  plan.md baseado na spec
+/j.implement        →  execução com validação automática contra a spec
 ```
 
 ---
@@ -56,10 +56,10 @@ Para features complexas:
 ## Conceitos-chave
 
 **CARL (Context-Aware Retrieval Layer)**
-O plugin `carl-inject` extrai keywords dos prompts e injeta automaticamente entradas relevantes do `docs/principles/manifest`. Rode `/init-deep` uma vez para popular o manifesto com o seu codebase.
+O plugin `j.carl-inject` extrai keywords dos prompts e injeta automaticamente entradas relevantes do `docs/principles/manifest`. Rode `/j.init-deep` uma vez para popular o manifesto com o seu codebase.
 
 **Hashlines**
-Sistema de referência estável a linhas de código: `NNN#XX:` onde `XX` é um hash da linha. Permite edits precisos sem ambiguidade, mesmo em arquivos grandes. O plugin `hashline-read` adiciona os prefixos; `hashline-edit` valida que referências não estão stale.
+Sistema de referência estável a linhas de código: `NNN#XX:` onde `XX` é um hash da linha. Permite edits precisos sem ambiguidade, mesmo em arquivos grandes. O plugin `j.hashline-read` adiciona os prefixos; `j.hashline-edit` valida que referências não estão stale.
 
 **Wave-based execution**
 O `@implementer` divide trabalho em waves: Foundation (sequencial) → Core (paralela via worktrees) → Integration (sequencial). Permite paralelismo seguro sem conflitos de merge.

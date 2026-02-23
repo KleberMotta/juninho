@@ -4,19 +4,19 @@ import path from "path"
 export function writeCommands(projectDir: string): void {
   const commandsDir = path.join(projectDir, ".opencode", "commands")
 
-  writeFileSync(path.join(commandsDir, "plan.md"), PLAN)
-  writeFileSync(path.join(commandsDir, "spec.md"), SPEC)
-  writeFileSync(path.join(commandsDir, "implement.md"), IMPLEMENT)
-  writeFileSync(path.join(commandsDir, "init-deep.md"), INIT_DEEP)
-  writeFileSync(path.join(commandsDir, "start-work.md"), START_WORK)
-  writeFileSync(path.join(commandsDir, "handoff.md"), HANDOFF)
-  writeFileSync(path.join(commandsDir, "ulw-loop.md"), ULW_LOOP)
-  writeFileSync(path.join(commandsDir, "check.md"), CHECK)
-  writeFileSync(path.join(commandsDir, "lint.md"), LINT)
-  writeFileSync(path.join(commandsDir, "test.md"), TEST)
-  writeFileSync(path.join(commandsDir, "pr-review.md"), PR_REVIEW)
-  writeFileSync(path.join(commandsDir, "status.md"), STATUS)
-  writeFileSync(path.join(commandsDir, "unify.md"), UNIFY_CMD)
+  writeFileSync(path.join(commandsDir, "j.plan.md"), PLAN)
+  writeFileSync(path.join(commandsDir, "j.spec.md"), SPEC)
+  writeFileSync(path.join(commandsDir, "j.implement.md"), IMPLEMENT)
+  writeFileSync(path.join(commandsDir, "j.init-deep.md"), INIT_DEEP)
+  writeFileSync(path.join(commandsDir, "j.start-work.md"), START_WORK)
+  writeFileSync(path.join(commandsDir, "j.handoff.md"), HANDOFF)
+  writeFileSync(path.join(commandsDir, "j.ulw-loop.md"), ULW_LOOP)
+  writeFileSync(path.join(commandsDir, "j.check.md"), CHECK)
+  writeFileSync(path.join(commandsDir, "j.lint.md"), LINT)
+  writeFileSync(path.join(commandsDir, "j.test.md"), TEST)
+  writeFileSync(path.join(commandsDir, "j.pr-review.md"), PR_REVIEW)
+  writeFileSync(path.join(commandsDir, "j.status.md"), STATUS)
+  writeFileSync(path.join(commandsDir, "j.unify.md"), UNIFY_CMD)
 }
 
 // ─── /plan ────────────────────────────────────────────────────────────────────
@@ -28,15 +28,15 @@ Invoke the \`@j.planner\` agent to create an actionable plan from a goal.
 ## Usage
 
 \`\`\`
-/plan <goal or task description>
+/j.plan <goal or task description>
 \`\`\`
 
 ## Examples
 
 \`\`\`
-/plan add user authentication with email and Google OAuth
-/plan fix the N+1 query bug in the appointments list
-/plan refactor the service layer to use the repository pattern
+/j.plan add user authentication with email and Google OAuth
+/j.plan fix the N+1 query bug in the appointments list
+/j.plan refactor the service layer to use the repository pattern
 \`\`\`
 
 ## What happens
@@ -46,7 +46,7 @@ Invoke the \`@j.planner\` agent to create an actionable plan from a goal.
 3. Interviews you (proportional to complexity)
 4. Writes \`plan.md\` and \`CONTEXT.md\`
 5. Spawns \`@j.plan-reviewer\` for quality check
-6. Marks plan as ready for \`/implement\`
+6. Marks plan as ready for \`/j.implement\`
 
 ## Delegation Rule (MANDATORY)
 
@@ -61,7 +61,7 @@ When ANY sub-agent returns output:
 
 ## After planning
 
-Run \`/implement\` to execute the plan, or \`/spec\` first for complex features.
+Run \`/j.implement\` to execute the plan, or \`/j.spec\` first for complex features.
 `
 
 // ─── /spec ────────────────────────────────────────────────────────────────────
@@ -73,15 +73,15 @@ Invoke the \`@j.spec-writer\` agent to create a detailed spec before implementat
 ## Usage
 
 \`\`\`
-/spec <feature name or description>
+/j.spec <feature name or description>
 \`\`\`
 
 ## Examples
 
 \`\`\`
-/spec user profile with avatar upload
-/spec appointment booking flow
-/spec payment integration with Stripe
+/j.spec user profile with avatar upload
+/j.spec appointment booking flow
+/j.spec payment integration with Stripe
 \`\`\`
 
 ## What happens
@@ -110,7 +110,7 @@ When ANY sub-agent returns output:
 
 ## After spec
 
-Run \`/plan\` to create an execution plan, then \`/implement\` to build.
+Run \`/j.plan\` to create an execution plan, then \`/j.implement\` to build.
 `
 
 // ─── /implement ───────────────────────────────────────────────────────────────
@@ -122,16 +122,16 @@ Invoke the \`@j.implementer\` agent to build what was planned or specified.
 ## Usage
 
 \`\`\`
-/implement
-/implement <specific task or file>
+/j.implement
+/j.implement <specific task or file>
 \`\`\`
 
 ## Examples
 
 \`\`\`
-/implement
-/implement the authentication middleware
-/implement docs/specs/user-profile.md
+/j.implement
+/j.implement the authentication middleware
+/j.implement docs/specs/user-profile.md
 \`\`\`
 
 ## What happens
@@ -158,7 +158,7 @@ When ANY sub-agent returns output:
 
 ## After implementation
 
-Run \`/implement\` again if waves are incomplete, or \`@j.unify\` to merge and create PR.
+Run \`/j.implement\` again if waves are incomplete, or \`@j.unify\` to merge and create PR.
 `
 
 // ─── /init-deep ───────────────────────────────────────────────────────────────
@@ -170,7 +170,7 @@ Perform a deep scan of the codebase and generate hierarchical AGENTS.md files an
 ## Usage
 
 \`\`\`
-/init-deep
+/j.init-deep
 \`\`\`
 
 ## What happens
@@ -205,7 +205,7 @@ Adds entries to \`docs/principles/manifest\` (KEY=VALUE format):
 - First time setting up the framework on an existing project
 - After major refactors that change module structure
 - When onboarding agents to a new area of the codebase
-- After \`/init-deep\` generates files, review and augment them with non-obvious domain knowledge
+- After \`/j.init-deep\` generates files, review and augment them with non-obvious domain knowledge
 
 ## Result
 
@@ -232,15 +232,15 @@ Initialize context for a focused work session on a specific task.
 ## Usage
 
 \`\`\`
-/start-work <task description or issue number>
+/j.start-work <task description or issue number>
 \`\`\`
 
 ## Examples
 
 \`\`\`
-/start-work issue #42 — fix login redirect loop
-/start-work implement the dashboard analytics widget
-/start-work #123
+/j.start-work issue #42 — fix login redirect loop
+/j.start-work implement the dashboard analytics widget
+/j.start-work #123
 \`\`\`
 
 ## What happens
@@ -248,12 +248,12 @@ Initialize context for a focused work session on a specific task.
 1. Loads \`docs/domain/INDEX.md\` for domain context
 2. Checks \`execution-state.md\` for any in-progress work
 3. If a \`plan.md\` exists: loads it and presents next steps
-4. If no plan: asks whether to \`/plan\` first or jump straight to \`/implement\`
+4. If no plan: asks whether to \`/j.plan\` first or jump straight to \`/j.implement\`
 5. Sets up \`execution-state.md\` with the current task
 
 ## After starting work
 
-The session is now focused. Use \`/implement\` to build, \`@j.validator\` to check, \`/handoff\` when done.
+The session is now focused. Use \`/j.implement\` to build, \`@j.validator\` to check, \`/j.handoff\` when done.
 `
 
 // ─── /handoff ─────────────────────────────────────────────────────────────────
@@ -265,7 +265,7 @@ Prepare a handoff document for the next session or team member.
 ## Usage
 
 \`\`\`
-/handoff
+/j.handoff
 \`\`\`
 
 ## What happens
@@ -315,8 +315,8 @@ Activate maximum parallelism mode — work until all tasks in execution-state.md
 ## Usage
 
 \`\`\`
-/ulw-loop
-/ulw-loop <task or goal>
+/j.ulw-loop
+/j.ulw-loop <task or goal>
 \`\`\`
 
 ## What happens
@@ -368,7 +368,7 @@ Run typecheck + lint + tests manually — the same checks the pre-commit hook en
 ## Usage
 
 \`\`\`
-/check
+/j.check
 \`\`\`
 
 ## What runs
@@ -398,7 +398,7 @@ Run the linter only for fast iteration during implementation.
 ## Usage
 
 \`\`\`
-/lint
+/j.lint
 \`\`\`
 
 ## What runs
@@ -421,16 +421,16 @@ Run the test suite only.
 ## Usage
 
 \`\`\`
-/test
-/test <pattern>
+/j.test
+/j.test <pattern>
 \`\`\`
 
 ## Examples
 
 \`\`\`
-/test
-/test src/payments
-/test --watch
+/j.test
+/j.test src/payments
+/j.test --watch
 \`\`\`
 
 ## What runs
@@ -440,7 +440,7 @@ Run the test suite only.
 ## When to use
 
 - After implementing a feature, to verify tests pass
-- When debugging a failing test — use \`/test <pattern>\` to target specific tests
+- When debugging a failing test — use \`/j.test <pattern>\` to target specific tests
 - To check test coverage on a specific module
 `
 
@@ -453,7 +453,7 @@ Launch the \`@j.reviewer\` agent to perform an advisory code review on the curre
 ## Usage
 
 \`\`\`
-/pr-review
+/j.pr-review
 \`\`\`
 
 ## What happens
@@ -465,7 +465,7 @@ Launch the \`@j.reviewer\` agent to perform an advisory code review on the curre
 
 ## When to use
 
-- After \`/unify\` creates the PR, before human review
+- After \`/j.unify\` creates the PR, before human review
 - When you want a second opinion on the implementation quality
 - For pre-merge quality assurance
 
@@ -488,7 +488,7 @@ Display the current \`execution-state.md\` summary — tasks, progress, and bloc
 ## Usage
 
 \`\`\`
-/status
+/j.status
 \`\`\`
 
 ## What shows
@@ -503,7 +503,7 @@ Display the current \`execution-state.md\` summary — tasks, progress, and bloc
 
 - At the start of a session to orient yourself
 - After resuming work to see what's left
-- To check if all tasks are complete before running \`/unify\`
+- To check if all tasks are complete before running \`/j.unify\`
 
 ## Source
 
@@ -520,7 +520,7 @@ Invoke the \`@j.unify\` agent to reconcile plan vs delivery, update domain docs,
 ## Usage
 
 \`\`\`
-/unify
+/j.unify
 \`\`\`
 
 ## What happens

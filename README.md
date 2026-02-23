@@ -20,7 +20,7 @@ juninho setup
 # Output:
 # [juninho] Installing Agentic Coding Framework...
 # [juninho] ✓ Framework installed successfully!
-# [juninho] Open OpenCode — /plan, /spec and /implement are ready.
+# [juninho] Open OpenCode — /j.plan, /j.spec and /j.implement are ready.
 ```
 
 ## What it does
@@ -28,10 +28,10 @@ juninho setup
 `juninho setup` automatically creates:
 
 - **9 agents** in `.opencode/agents/` (j.planner, j.spec-writer, j.implementer, j.validator, j.reviewer, j.plan-reviewer, j.unify, j.explore, j.librarian)
-- **5 skills** in `.opencode/skills/` (test-writing, page-creation, api-route-creation, server-action-creation, schema-migration)
+- **5 skills** in `.opencode/skills/` (j.test-writing, j.page-creation, j.api-route-creation, j.server-action-creation, j.schema-migration)
 - **11 plugins** in `.opencode/plugins/` (auto-discovered by OpenCode)
 - **4 tools** in `.opencode/tools/` (find-pattern, next-version, lsp, ast-grep)
-- **13 slash commands** in `.opencode/commands/` (/plan, /spec, /implement, /init-deep, /start-work, /handoff, /ulw-loop, /check, /lint, /test, /pr-review, /status, /unify)
+- **13 slash commands** in `.opencode/commands/` (/j.plan, /j.spec, /j.implement, /j.init-deep, /j.start-work, /j.handoff, /j.ulw-loop, /j.check, /j.lint, /j.test, /j.pr-review, /j.status, /j.unify)
 - **State files** for persistent context and execution tracking
 - **Docs scaffold** with AGENTS.md, domain index, and manifest
 
