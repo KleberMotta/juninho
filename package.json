@@ -1,6 +1,6 @@
 {
   "name": "@kleber.mottajr/juninho",
-  "version": "1.0.0-alpha.4",
+  "version": "1.0.0-alpha.5",
   "description": "Bootstrap the Agentic Coding Framework into any OpenCode project",
   "bin": {
     "juninho": "dist/cli.js"
