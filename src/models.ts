@@ -104,9 +104,9 @@ export const AGENT_TIER_MAP: Record<string, ModelTier> = {
 
 /** Default models (used when no config exists and discovery is unavailable) */
 export const DEFAULT_MODELS: Record<ModelTier, string> = {
-  strong: "anthropic/claude-opus-4-6",
-  medium: "anthropic/claude-sonnet-4-6",
-  weak: "anthropic/claude-haiku-4-5",
+  strong: "claude-opus-4-6",
+  medium: "claude-sonnet-4-6",
+  weak: "claude-haiku-4-5",
 }
 
 /**

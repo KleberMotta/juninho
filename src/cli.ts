@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 import { runSetup } from "./installer.js"
-import { runConfigWizard } from "./config-wizard.js"
 import path from "path"
 
 const args = process.argv.slice(2)
@@ -19,7 +18,6 @@ Usage:
 
 Commands:
   setup [dir] [--force]   Install the framework into a project
-  config [dir]            Configure model preferences interactively
 
 Options:
   --force                 Reinstall even if already configured
@@ -30,15 +28,14 @@ Model Tiers:
   Medium  → Implementation & review    (default: claude-sonnet-4.6)
   Weak    → Research & exploration     (default: claude-haiku-4.5)
 
-  The 'config' command detects available models via 'opencode models'
+  During setup, juninho detects available models via 'opencode models'
   and lets you choose the best model for each tier.
+  To reconfigure models, run 'juninho setup --force'.
 
 Examples:
   juninho setup                    Install with auto-detected models
   juninho setup ./my-project       Install into a specific directory
-  juninho setup --force            Reinstall (overwrite existing)
-  juninho config                   Configure models interactively
-  juninho config ./my-project      Configure for a specific project
+  juninho setup --force            Reinstall & reconfigure models
 `)
 }
 
@@ -46,13 +43,6 @@ if (command === "" || command === "--help" || command === "-h") {
   showHelp()
 } else if (command === "setup") {
   runSetup(path.resolve(targetDir), { force: forceFlag })
-    .then(() => process.exit(0))
-    .catch((e: Error) => {
-      console.error("[juninho] Error:", e.message)
-      process.exit(1)
-    })
-} else if (command === "config") {
-  runConfigWizard(path.resolve(targetDir))
     .then(() => process.exit(0))
     .catch((e: Error) => {
       console.error("[juninho] Error:", e.message)

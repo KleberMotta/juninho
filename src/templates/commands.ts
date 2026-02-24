@@ -45,8 +45,9 @@ Invoke the \`@j.planner\` agent to create an actionable plan from a goal.
 2. Explores the codebase for context
 3. Interviews you (proportional to complexity)
 4. Writes \`plan.md\` and \`CONTEXT.md\`
-5. Spawns \`@j.plan-reviewer\` for quality check
-6. Marks plan as ready for \`/j.implement\`
+5. Spawns \`@j.plan-reviewer\` for automated quality check
+6. **Presents the plan to you for explicit approval**
+7. Marks plan as ready for \`/j.implement\` (only after your approval)
 
 ## Delegation Rule (MANDATORY)
 
@@ -92,8 +93,8 @@ Invoke the \`@j.spec-writer\` agent to create a detailed spec before implementat
    - Requirements: functional and non-functional
    - Contract: API and interface definitions
    - Data: schema and migration strategy
-   - Review: verify completeness
-3. Writes spec to \`docs/specs/{feature-name}.md\`
+   - Review: **presents spec for your explicit approval**
+3. Writes spec to \`docs/specs/{feature-name}.md\` (only after your approval)
 
 The session does NOT need to call \`@j.explore\` separately — \`@j.spec-writer\` handles its own research internally.
 

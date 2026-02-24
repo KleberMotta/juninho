@@ -195,7 +195,21 @@ task(subagent_type="j.plan-reviewer")
 
 **REJECT** → incorporate the specific issues (max 3) → rewrite the affected tasks in plan.md → spawn j.plan-reviewer again. Loop until OKAY.
 
-### 3.3 Signal readiness
+### 3.3 Developer Approval (MANDATORY)
+
+**After j.plan-reviewer returns OKAY, present the plan to the developer for explicit approval.**
+
+Use the \`question\` tool to present a summary of the plan and ask for approval:
+
+1. Show: goal, total tasks, wave count, key files, risks
+2. Ask: "Do you approve this plan? (yes / no / change X)"
+3. If the developer requests changes → apply them → re-run j.plan-reviewer → ask again
+4. If the developer says no → ask what to change → loop back to 2.4
+5. **Only proceed to 3.4 when the developer explicitly approves**
+
+> **NEVER write \`.plan-ready\` without developer approval.** The plan-reviewer is an automated quality gate. Developer approval is the actual go/no-go decision.
+
+### 3.4 Signal readiness
 
 Write \`.opencode/state/.plan-ready\` with contents:
 \`docs/specs/{feature-slug}/plan.md\`
@@ -209,7 +223,8 @@ Report to developer:
 
 - Always write \`docs/specs/{feature-slug}/CONTEXT.md\` before the plan
 - Always write \`docs/specs/{feature-slug}/plan.md\` before concluding
-- Always write \`.opencode/state/.plan-ready\` after j.plan-reviewer returns OKAY
+- **Always get explicit developer approval via \`question\` tool before writing \`.plan-ready\`**
+- Always write \`.opencode/state/.plan-ready\` after developer approval
 - Never start implementing — planning only
 - Create \`docs/specs/{feature-slug}/\` directory if it doesn't exist
 `
@@ -348,13 +363,19 @@ Define the data model:
 - Data validation rules
 - Indexes and performance considerations
 
-### Phase 5 — Review
+### Phase 5 — Review and Approval (MANDATORY)
 
-Present the full spec to the developer for approval:
-- Walk through each section
-- Identify any remaining ambiguities
-- Confirm all acceptance criteria are testable by an agent
-- Get explicit approval before writing
+Present the full spec to the developer for explicit approval using the \`question\` tool:
+
+1. Present a clear summary: problem statement, key requirements, acceptance criteria, API contract, data model changes
+2. Identify any remaining ambiguities and ask about them
+3. Confirm all acceptance criteria are testable by an agent
+4. Ask explicitly: "Do you approve this spec? (yes / no / change X)"
+5. If the developer requests changes → apply them → present again
+6. If the developer says no → ask what to change → loop back
+7. **Only write the spec file after the developer explicitly approves**
+
+> **NEVER write the spec without developer approval.** The spec becomes the source of truth for validation — the developer must agree with every criterion.
 
 ---
 
@@ -423,9 +444,9 @@ export async function createFoo(input: CreateFooInput): Promise<ActionResult<Foo
 
 ## Output Contract
 
-After writing:
-1. Tell developer: "Spec written to \`docs/specs/{slug}/spec.md\` — review and approve, then run \`/j.plan\` to build the execution plan."
-2. Do NOT start planning or implementing.
+- **Always get explicit developer approval via \`question\` tool before writing the spec**
+- After writing: tell developer "Spec approved and written to \`docs/specs/{slug}/spec.md\`. Run \`/j.plan\` to build the execution plan."
+- Do NOT start planning or implementing.
 `
 
 // ─── Implementer ─────────────────────────────────────────────────────────────
@@ -445,8 +466,8 @@ You are the **Implementer** — you execute plans precisely, enforcing the READ�
 1. Read \`docs/specs/{feature-slug}/spec.md\` (source of truth for validation)
 2. Read \`docs/specs/{feature-slug}/plan.md\` (task list and wave assignments)
 3. Read \`.opencode/state/execution-state.md\` (current task status)
-4. Read \`.opencode/state/persistent-context.md\` (project conventions and decisions)
-5. Read \`.opencode/state/implementer-work.md\` (your scratch space — resume previous context if it has content)
+4. Read \`.opencode/state/implementer-work.md\` (your scratch space — resume previous context if it has content)
+5. Read \`.opencode/state/validator-work.md\` if it exists (check previous validation feedback)
 
 ---
 

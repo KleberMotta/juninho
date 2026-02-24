@@ -30,7 +30,7 @@ juninho setup
 
 Depois disso, o OpenCode no seu projeto terá:
 - **9 agentes especializados** com protocolos definidos (j.planner, j.spec-writer, j.implementer, j.validator, j.reviewer, j.plan-reviewer, j.unify, j.explore, j.librarian)
-- **11 plugins** que rodam automaticamente como hooks (j.env-protection, j.auto-format, j.carl-inject, j.skill-inject, j.hashline-read/edit, j.directory-agents-injector, ...)
+- **12 plugins** que rodam automaticamente como hooks (j.env-protection, j.auto-format, j.carl-inject, j.skill-inject, j.memory, j.hashline-read/edit, j.directory-agents-injector, ...)
 - **5 skills** que injetam instruções por tipo de arquivo (tests, pages, API routes, actions, migrations)
 - **4 ferramentas** (lsp, ast-grep, find-pattern, next-version)
 - **13 slash commands** (/j.plan, /j.spec, /j.implement, /j.init-deep, /j.start-work, /j.handoff, /j.ulw-loop, /j.check, /j.lint, /j.test, /j.pr-review, /j.status, /j.unify)
@@ -56,7 +56,7 @@ Para features complexas:
 ## Conceitos-chave
 
 **CARL (Context-Aware Retrieval Layer)**
-O plugin `j.carl-inject` extrai keywords dos prompts e injeta automaticamente entradas relevantes do `docs/principles/manifest`. Rode `/j.init-deep` uma vez para popular o manifesto com o seu codebase.
+O plugin `j.carl-inject` analisa os paths dos arquivos sendo lidos e injeta automaticamente entries relevantes do `docs/principles/manifest` e `docs/domain/INDEX.md`. Rode `/j.init-deep` uma vez para popular o manifesto com o seu codebase.
 
 **Hashlines**
 Sistema de referência estável a linhas de código: `NNN#XX:` onde `XX` é um hash da linha. Permite edits precisos sem ambiguidade, mesmo em arquivos grandes. O plugin `j.hashline-read` adiciona os prefixos; `j.hashline-edit` valida que referências não estão stale.

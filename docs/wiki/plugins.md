@@ -9,7 +9,7 @@ Cada plugin exporta um objeto `Plugin` com hooks que rodam em eventos específic
 Evento do OpenCode → Plugin intercepta → inject contexto / abort / transformOutput
 ```
 
-Hooks disponíveis: `tool.execute.before`, `tool.execute.after`, `session.idle`, `session.start`
+Hooks disponíveis: `tool.execute.before`, `tool.execute.after`, `experimental.session.compacting`, `event`, `shell.env`
 
 ---
 
@@ -53,41 +53,51 @@ Detecta a extensão do arquivo modificado e roda o formatter adequado:
 
 ## plan-autoload
 
-**Hook:** `session.idle`
+**Hooks:** `tool.execute.after` (Read) + `experimental.session.compacting`
 
-Detecta se há um plano ativo (`.opencode/state/.plan-ready`) e injeta o conteúdo no contexto.
+Injeta o plano ativo no contexto da sessão. Fire-once: dispara apenas no primeiro Read.
 
 **Fluxo:**
 1. `@planner` termina e escreve o path do `plan.md` em `.plan-ready`
-2. Na próxima pausa da sessão, o plugin lê o arquivo
-3. Injeta o plano no contexto com instrução para usar `/implement`
+2. No primeiro Read da sessão, o plugin lê `.plan-ready`, carrega o plano e appenda a `output.output`
+3. Deleta `.plan-ready` (fire-once) para não re-injetar
+4. Durante compaction (`experimental.session.compacting`), re-injeta via `output.context.push` para sobreviver resets
 
-**Resultado:** o agente nunca "esquece" o plano ativo entre turns.
+**Resultado:** o agente recebe o plano ativo imediatamente e nunca o perde em compactions.
 
 ---
 
 ## carl-inject
 
-**Hook:** `tool.execute.before` em `UserPromptSubmit`
+**Hooks:** `tool.execute.after` (Read) + `experimental.session.compacting`
 
-CARL = **C**ontext-**A**ware **R**etrieval **L**ayer
+CARL v2 = **C**ontext-**A**ware **R**etrieval **L**ayer
 
-Extrai keywords do prompt do usuário e injeta entradas relevantes do `docs/principles/manifest`.
+Analisa o **conteúdo** dos arquivos lidos (não apenas o path) para injetar princípios e docs de domínio relevantes. Inspirado no design do oh-my-opencode (keyword-detector + ContextCollector).
 
 **Algoritmo:**
-1. Extrai palavras únicas com > 4 chars do prompt
-2. Busca matches em `docs/principles/manifest`
-3. Injeta até 5 entradas relevantes
+1. **stripCodeBlocks** — remove blocos de código fenced e inline do texto antes de extrair keywords. Previne falsos positivos de nomes de variáveis, imports, etc.
+2. **Três sinais de contexto:**
+   - *Task awareness* (fire-once por sessão): lê `execution-state.md` e extrai keywords do Goal + Task List
+   - *Conteúdo do arquivo* (primário): keywords do texto do arquivo lido, após strip de código
+   - *Path do arquivo* (secundário): complementa a análise de conteúdo
+3. **Word-boundary matching** — "auth" match "auth" mas NÃO "authorize" ou "author"
+4. **ContextCollector** com budget cap (`MAX_CONTEXT_BYTES = 8000`) e dedup por key — previne estouro de contexto
+5. **Compaction survival** — `experimental.session.compacting` re-injeta todos os docs coletados via `output.context.push`
 
-**Pré-requisito:** `docs/principles/manifest` precisa ter conteúdo. Rode `/init-deep` para populá-lo.
+**Fontes de dados:**
+- `docs/principles/manifest` — RECALL keywords + arquivo por princípio (com prioridade opcional)
+- `docs/domain/INDEX.md` — keywords + arquivos por domínio
+
+**Pré-requisito:** `docs/principles/manifest` e `docs/domain/INDEX.md` precisam ter conteúdo. Rode `/init-deep` para populá-los.
 
 ---
 
 ## skill-inject
 
-**Hook:** `tool.execute.before` em Write/Edit/MultiEdit
+**Hook:** `tool.execute.after` (Read + Write/Edit)
 
-Mapeia o path do arquivo sendo editado para uma skill e injeta as instruções:
+Mapeia o path do arquivo para uma skill e injeta instruções contextualmente:
 
 | Padrão de path | Skill injetada |
 |----------------|----------------|
@@ -97,42 +107,50 @@ Mapeia o path do arquivo sendo editado para uma skill e injeta as instruções:
 | `**/actions.ts` | `server-action-creation/SKILL.md` |
 | `**/schema.prisma` | `schema-migration/SKILL.md` |
 
-**Resultado:** o agente recebe instruções específicas antes de escrever um arquivo — consistência automática.
+**Duas fases:**
+- **Read:** injeta SKILL.md completo no output (agente recebe instruções ANTES de escrever)
+- **Write/Edit:** se o skill nunca foi injetado via Read, lembra o agente de ler o arquivo primeiro
+
+**Resultado:** o agente recebe instruções específicas para cada tipo de artefato — consistência automática.
 
 ---
 
 ## intent-gate
 
-**Hook:** `tool.execute.before` em `UserPromptSubmit`
+**Hook:** `tool.execute.after` (Write/Edit)
 
-Classifica a intenção real do prompt e anota no contexto para melhor roteamento de agente.
+Scope-guard: depois de qualquer Write/Edit, verifica se o arquivo modificado está no plano ativo.
 
-**Tipos de intent:**
+**Fluxo:**
+1. No primeiro Write/Edit, carrega lazy os arquivos mencionados em `plan.md` / `plan-ready.md`
+2. Para cada Write/Edit subsequente, compara o path do arquivo com os paths do plano
+3. Se o arquivo não está no plano, appenda warning a `output.output`
 
-| Intent | Keywords | Agente sugerido |
-|--------|----------|-----------------|
-| `RESOLVE_PROBLEM` | fix, bug, error, broken | @implementer |
-| `REFACTOR` | refactor, cleanup, restructure | @implementer |
-| `ADD_FEATURE` | add, implement, create, build | @planner + @implementer |
-| `RESEARCH` | understand, explain, how does | inline |
-| `MIGRATION` | migrate, upgrade, port | @planner + @implementer |
-| `REVIEW` | review, check, audit | @reviewer |
+**Output quando fora do escopo:**
+```
+[intent-gate] ⚠ SCOPE WARNING: "src/utils/random.ts" is not referenced in the current plan.
+Verify this change is necessary for the current task before continuing.
+```
 
-Não redireciona automaticamente — anota o intent para que o agente possa escolher conscientemente.
+**Resultado:** previne scope creep — o agente é alertado quando modifica arquivos fora do plano.
 
 ---
 
 ## todo-enforcer
 
-**Hook:** `session.idle`
+**Hooks:** `experimental.session.compacting` + `tool.execute.after` (Write/Edit)
 
-Lê `execution-state.md` e re-injeta tasks incompletas quando a sessão fica idle.
+Re-injeta tasks incompletas para prevenir drift.
 
 **Lê:** linhas com `- [ ]` (checkboxes desmarcadas) em `execution-state.md`
 
-**Injeta:**
+**Dois mecanismos:**
+- **Compaction:** injeta lista completa de tasks pendentes via `output.context.push` — sobrevive resets de context window
+- **Write/Edit:** append lean de contagem pendente no output — nudge contínuo após cada modificação
+
+**Injeta (compaction):**
 ```
-[todo-enforcer] You have 3 incomplete task(s):
+[todo-enforcer] 3 incomplete task(s) remaining:
 - [ ] implementar rota de pagamento
 - [ ] adicionar testes de integração
 - [ ] atualizar AGENTS.md
@@ -140,7 +158,7 @@ Lê `execution-state.md` e re-injeta tasks incompletas quando a sessão fica idl
 Do not stop until all tasks are complete. Continue working.
 ```
 
-**Resultado:** previne drift — o agente não "esquece" o que estava fazendo.
+**Resultado:** previne drift — o agente nunca perde o estado de tasks, nem em compaction nem entre edits.
 
 ---
 
@@ -205,9 +223,9 @@ Re-read the file to get current hashlines.
 
 ## directory-agents-injector
 
-**Hook:** `session.start` / `tool.execute.before`
+**Hook:** `tool.execute.after` (Read)
 
-Mecanismo **Tier 1 de contexto**: lê arquivos `AGENTS.md` em cada nível do diretório e injeta suas instruções hierarquicamente no contexto.
+Mecanismo **Tier 1 de contexto**: quando o agente lê um arquivo, caminha a árvore de diretórios e appenda todo `AGENTS.md` encontrado de forma hierárquica.
 
 **Como funciona:**
 
@@ -228,6 +246,23 @@ Quando o agente trabalha em `src/components/Button.tsx`, o plugin injeta:
 **Benefício:** diferentes partes do projeto podem ter convenções diferentes (ex: regras de estilo para componentes, padrões de rota para API) sem poluir o contexto global da sessão.
 
 **Integração com `/init-deep`:** o comando `/init-deep` gera `AGENTS.md` hierárquicos automaticamente ao escanear o codebase.
+
+---
+
+## memory
+
+**Hooks:** `tool.execute.after` (qualquer tool) + `experimental.session.compacting`
+
+Injeta `persistent-context.md` (memória de repositório cross-session, como OpenClaw).
+
+**Fluxo:**
+1. Na primeira tool call da sessão, lê `.opencode/state/persistent-context.md` e appenda a `output.output`
+2. Fire-once per session — não re-injeta em tool calls subsequentes
+3. Durante compaction, re-injeta via `output.context.push` para sobreviver resets
+
+**Quem escreve:** apenas `@j.unify` atualiza `persistent-context.md` com decisões, padrões e NOTEs deferidos.
+
+**Resultado:** toda sessão começa com memória do projeto — decisões arquiteturais, padrões descobertos e convenções persistem automaticamente.
 
 ---
 

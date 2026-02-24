@@ -66,7 +66,7 @@ const AGENTS = [
 const PLUGINS = [
   "j.env-protection", "j.auto-format", "j.plan-autoload", "j.carl-inject",
   "j.skill-inject", "j.intent-gate", "j.todo-enforcer", "j.comment-checker",
-  "j.hashline-read", "j.hashline-edit", "j.directory-agents-injector",
+  "j.hashline-read", "j.hashline-edit", "j.directory-agents-injector", "j.memory",
 ]
 
 const COMMANDS = [
@@ -180,7 +180,7 @@ test("Installation", "All 9 agent files exist", () => {
   return missing.length === 0 ? true : `Missing: ${missing.join(", ")}`
 })
 
-test("Installation", "All 11 plugins exist", () => {
+test("Installation", "All 12 plugins exist", () => {
   const missing = PLUGINS.filter((p) => !existsSync(pluginPath(p)))
   return missing.length === 0 ? true : `Missing: ${missing.join(", ")}`
 })
@@ -230,15 +230,16 @@ test("Installation", "Idempotency: second run skips re-install", () => {
 const PLUGIN_HOOKS: Record<string, string> = {
   "j.env-protection": "tool.execute.before",
   "j.auto-format": "tool.execute.after",
-  "j.plan-autoload": "experimental.chat.system.transform",
-  "j.carl-inject": "chat.message",
-  "j.skill-inject": "tool.execute.before",
-  "j.intent-gate": "chat.message",
-  "j.todo-enforcer": "experimental.chat.system.transform",
+  "j.plan-autoload": "tool.execute.after",
+  "j.carl-inject": "tool.execute.after",
+  "j.skill-inject": "tool.execute.after",
+  "j.intent-gate": "tool.execute.after",
+  "j.todo-enforcer": "experimental.session.compacting",
   "j.comment-checker": "tool.execute.after",
   "j.hashline-read": "tool.execute.after",
   "j.hashline-edit": "tool.execute.before",
   "j.directory-agents-injector": "tool.execute.after",
+  "j.memory": "tool.execute.after",
 }
 
 for (const [plugin, hook] of Object.entries(PLUGIN_HOOKS)) {
@@ -257,7 +258,7 @@ for (const [plugin, hook] of Object.entries(PLUGIN_HOOKS)) {
   })
 }
 
-// ─── Group 3: Plugin Logic (18 tests) ─────────────────────────────────────────
+// ─── Group 3: Plugin Logic (19 tests) ─────────────────────────────────────────
 
 // env-protection (3)
 test("Plugin Logic", "env-protection: SENSITIVE array contains .env pattern", () => {
@@ -307,7 +308,7 @@ test("Plugin Logic", "hashline-read: correct hash format verified via simulation
     : `Tagged line format incorrect: ${tagged}`
 })
 
-// carl-inject (3)
+// carl-inject (4)
 test("Plugin Logic", "carl-inject: generated manifest has AUTH_STATE=active", () => {
   const manifest = readFileSync(path.join(testDir, "docs", "principles", "manifest"), "utf-8")
   return manifest.includes("AUTH_STATE=active")
@@ -315,18 +316,25 @@ test("Plugin Logic", "carl-inject: generated manifest has AUTH_STATE=active", ()
     : "AUTH_STATE=active not found in generated manifest"
 })
 
-test("Plugin Logic", "carl-inject: parsePrinciplesManifest function present", () => {
+test("Plugin Logic", "carl-inject: stripCodeBlocks function present", () => {
   const content = readPlugin("j.carl-inject")
-  return content.includes("parsePrinciplesManifest")
+  return content.includes("stripCodeBlocks")
     ? true
-    : "parsePrinciplesManifest function not found in carl-inject"
+    : "stripCodeBlocks function not found in carl-inject"
 })
 
-test("Plugin Logic", "carl-inject: filters by promptWords set before injecting", () => {
+test("Plugin Logic", "carl-inject: ContextCollector with budget cap", () => {
   const content = readPlugin("j.carl-inject")
-  return content.includes("promptWords")
+  return content.includes("ContextCollector") && content.includes("MAX_CONTEXT_BYTES")
     ? true
-    : "promptWords keyword filtering not found in carl-inject"
+    : "ContextCollector or MAX_CONTEXT_BYTES not found in carl-inject"
+})
+
+test("Plugin Logic", "carl-inject: compaction survival via experimental.session.compacting", () => {
+  const content = readPlugin("j.carl-inject")
+  return content.includes("experimental.session.compacting")
+    ? true
+    : "experimental.session.compacting hook not found in carl-inject"
 })
 
 // skill-inject (3)
@@ -366,11 +374,11 @@ test("Plugin Logic", "plan-autoload: deletes flag with unlinkSync (fire-once)", 
     : "unlinkSync (fire-once delete) not found in plan-autoload"
 })
 
-test("Plugin Logic", "plan-autoload: pushes plan content to output.system", () => {
+test("Plugin Logic", "plan-autoload: appends plan content to output.output", () => {
   const content = readPlugin("j.plan-autoload")
-  return content.includes("output.system.push")
+  return content.includes("output.output")
     ? true
-    : "output.system.push not found in plan-autoload"
+    : "output.output not found in plan-autoload"
 })
 
 // todo-enforcer (3)
@@ -381,11 +389,11 @@ test("Plugin Logic", "todo-enforcer: reads execution-state.md for todos", () => 
     : "execution-state.md reference not found in todo-enforcer"
 })
 
-test("Plugin Logic", "todo-enforcer: pushes incomplete items to output.system", () => {
+test("Plugin Logic", "todo-enforcer: pushes incomplete items to output.context", () => {
   const content = readPlugin("j.todo-enforcer")
-  return content.includes("output.system.push")
+  return content.includes("output.context.push")
     ? true
-    : "output.system.push not found in todo-enforcer"
+    : "output.context.push not found in todo-enforcer"
 })
 
 test("Plugin Logic", "todo-enforcer: returns early when no incomplete items", () => {
@@ -447,10 +455,12 @@ test("Agent Config", "j.unify: task allowed", () =>
     ? true
     : `j.unify.permission.task should be allow, got: ${cfg.agent?.["j.unify"]?.permission?.task}`)
 
-test("Agent Config", "Context7 MCP configured with npx command", () =>
-  cfg.mcp?.context7?.command === "npx"
+test("Agent Config", "Context7 MCP configured for OpenCode", () => {
+  const ctx = cfg.mcp?.context7
+  return ctx?.type === "local" && Array.isArray(ctx?.command) && ctx.command[0] === "npx"
     ? true
-    : `Expected mcp.context7.command=npx, got: ${JSON.stringify(cfg.mcp?.context7)}`)
+    : `Expected mcp.context7 with type=local and command array starting with npx, got: ${JSON.stringify(ctx)}`
+})
 
 // ─── Group 5: Tool Exports (8 tests) ─────────────────────────────────────────
 
@@ -669,9 +679,9 @@ test("Model Config", "j.implementer frontmatter uses medium model", () => {
 
 test("Model Config", "CLI shows help when called without arguments", () => {
   const out = execSync(`node "${CLI_PATH}"`, { encoding: "utf-8" })
-  return out.includes("config") && out.includes("setup") && out.includes("Model Tiers")
+  return out.includes("setup") && out.includes("Model Tiers") && out.includes("--force")
     ? true
-    : `Expected help output with config/setup/Model Tiers, got: ${out.slice(0, 200)}`
+    : `Expected help output with setup/Model Tiers/--force, got: ${out.slice(0, 200)}`
 })
 
 // ─── Report Generator ─────────────────────────────────────────────────────────

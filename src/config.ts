@@ -91,7 +91,7 @@ export function resolveModels(projectDir: string): JuninhoConfig {
     "\n" +
     "  Soluções:\n" +
     "    1. Instale e configure o OpenCode (https://opencode.ai)\n" +
-    "    2. Execute 'juninho config' para configurar os modelos manualmente"
+    "    2. Execute 'juninho setup' — você poderá configurar os modelos interativamente"
   )
 }
 
